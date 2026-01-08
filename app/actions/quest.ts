@@ -24,7 +24,7 @@ export async function generateQuests(userInput: string, userJob: string) {
   `;
 
     const res = await genAI.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       contents: prompt,
     });
     const response = res.text;
