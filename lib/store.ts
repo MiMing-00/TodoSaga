@@ -692,27 +692,36 @@ export const useSagaStore = create<SagaState>()(
       // 서버 HTML과 클라이언트 첫 렌더를 일치시키기 위해 자동 복원을 끄고,
       // 마운트 후 명시적으로 rehydrate 한다 (page.tsx 참조)
       skipHydration: true,
-      onRehydrateStorage: () => (state) => {
-        if (!state) return;
-        // 스토어 도입 이전에 쓰던 키에서 직업을 한 번 넘겨받는다
-        if (!state.job) {
-          const legacy = localStorage.getItem('todosaga_userJob');
-          if (legacy) {
-            state.setJob(legacy);
-            localStorage.removeItem('todosaga_userJob');
+      onRehydrateStorage: () => (state, error) => {
+        // 에러/예외가 나도 hydrated는 반드시 올린다.
+        // 안 그러면 「사가의 서를 펼치는 중」에 영원히 갇힌다.
+        try {
+          if (error) {
+            console.error('todosaga rehydrate failed', error);
           }
+          if (!state) return;
+
+          // 스토어 도입 이전에 쓰던 키에서 직업을 한 번 넘겨받는다
+          if (!state.job) {
+            const legacy = localStorage.getItem('todosaga_userJob');
+            if (legacy) {
+              state.setJob(legacy);
+              localStorage.removeItem('todosaga_userJob');
+            }
+          }
+          // 저장된 직업이 아직 해금 조건을 못 채웠다면 견습생으로 되돌린다
+          if (!isClassUnlocked(state.charClass, state.stats)) {
+            state.charClass = 'NONE';
+          }
+          // 저장된 장착 상태가 지금 조건에 안 맞으면 조용히 벗긴다
+          state.equipped = pruneEquipped(
+            state.equipped,
+            state.inventory,
+            equipContext(state),
+          );
+        } finally {
+          useSagaStore.getState().markHydrated();
         }
-        // 저장된 직업이 아직 해금 조건을 못 채웠다면 견습생으로 되돌린다
-        if (!isClassUnlocked(state.charClass, state.stats)) {
-          state.charClass = 'NONE';
-        }
-        // 저장된 장착 상태가 지금 조건에 안 맞으면 조용히 벗긴다
-        state.equipped = pruneEquipped(
-          state.equipped,
-          state.inventory,
-          equipContext(state),
-        );
-        state.markHydrated();
       },
       // hydrated는 런타임 플래그라 저장하지 않는다
       partialize: (s) => ({

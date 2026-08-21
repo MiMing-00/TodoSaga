@@ -280,7 +280,7 @@ export function QuestCard({
               done ? 'text-ink-disabled' : 'text-ink-muted'
             }`}
           >
-            🦋 {quest.flavor_text}
+            🐱🎀 {quest.flavor_text}
           </p>
         )}
 

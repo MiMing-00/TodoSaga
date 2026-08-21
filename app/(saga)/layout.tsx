@@ -46,9 +46,20 @@ export default function SagaLayout({
 
   // 저장된 상태는 마운트 후에 복원한다.
   // 렌더 중에 localStorage를 읽으면 서버 HTML과 값이 달라져 하이드레이션이 깨진다.
+  // hydrated가 false로 남는 경우(복원 실패·HMR 리셋)에도 반드시 게이트를 연다.
   useEffect(() => {
-    void useSagaStore.persist.rehydrate();
-  }, []);
+    if (hydrated) return;
+
+    let cancelled = false;
+    // zustand rehydrate는 storage 없을 때 undefined를 돌려준다
+    void Promise.resolve(useSagaStore.persist.rehydrate()).finally(() => {
+      if (!cancelled) useSagaStore.getState().markHydrated();
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated]);
 
   useEffect(() => {
     if (!toast) return;

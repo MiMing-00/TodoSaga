@@ -216,7 +216,9 @@ export const NABI: Grid = [
  *    옆모습이라고 머리를 줄이면 다른 짐승이 된다.
  *  - 귀는 정면과 똑같이 **두 개**, 2칸에서 3칸으로 벌어지며 머리로 이어진다.
  *  - **목이 보이면 고양이가 아니다.** 정수리와 등 사이는 네 행뿐이다.
- *  - 다리는 짧고 굵게 두 행. 길고 가늘면 사슴이 된다.
+ *  - 다리는 짧고 굵게 두 행, **네 다리 모두 두 칸**으로 균일하게.
+ *    가느다란 한 칸 다리는 사슴이 된다.
+ *  - 걸음은 보폭을 벌렸다 모았다 — A는 다리를 쭉, B는 모아 딛기.
  *  - 코는 얼굴 **안**에 둔다. 밖으로 내밀면 혹으로 보인다.
  *  - 꼬리는 엉덩이에서 세로로 잇는다. 대각선은 끊겨 보인다. */
 export const NABI_SIDE_A: Grid = [
@@ -231,9 +233,9 @@ export const NABI_SIDE_A: Grid = [
   '..ffffffffffff..',
   '..ffffffffffff..',
   '..ffffffffffff..',
-  '..fff....fffff..',
-  '..ff.....ff.....',
-  '..oo.....oo.....',
+  '.fffff..fffffff.',
+  '.ff..ff..ff..ff.',
+  '.oo..oo..oo..oo.',
   '................',
   '................',
 ];
@@ -250,9 +252,9 @@ export const NABI_SIDE_B: Grid = [
   '..ffffffffffff..',
   '..ffffffffffff..',
   '..ffffffffffff..',
-  '..fff....fffff..',
-  '...ff.....ff....',
-  '...oo.....oo....',
+  '..fffff..fffff..',
+  '..ff.ff..ff.ff..',
+  '..oo.oo..oo.oo..',
   '................',
   '................',
 ];
@@ -326,7 +328,14 @@ export const NABI_JUMP_DOWN: Grid = [
 export const NABI_JUMP = NABI_JUMP_UP;
 
 
-/** 집사의 일과. 빨간 표지 책의 **흰 책장**이 넘어간다 */
+/** 집사의 일과 — 책 읽기.
+ *
+ *  책장은 "항상 움직이는" 게 아니라 **대부분 펼쳐 두고**, 가끔만 넘긴다.
+ *  16칸에서는 장 전체를 뒤집으면 번쩍여서 책이 안 보인다.
+ *  그래서 오른쪽 장이 **얇은 세로 띠**로 척추를 지나 왼쪽에 앉는 짧은
+ *  세 컷만 쓰고, 나머지는 펼친 자세(A)로 고정한다.
+ *
+ *  A 펼쳐 읽기 → B 오른쪽 모서리만 들림 → C 척수 위 세로 띠 → D 왼쪽에 앉음. */
 export const NABI_STUDY_A: Grid = [
   '................',
   '...ff......ff...',
@@ -346,6 +355,7 @@ export const NABI_STUDY_A: Grid = [
   '................',
 ];
 
+/** 오른쪽 장 모서리만 살짝 들린다 */
 export const NABI_STUDY_B: Grid = [
   '................',
   '...ff......ff...',
@@ -357,9 +367,49 @@ export const NABI_STUDY_B: Grid = [
   '...ffffffffff...',
   '....ffffffff....',
   '....ffffffff....',
-  '...bbbbbwwbbb...',
-  '...bwwwbwbwwb...',
+  '...bbbbbbbwwb...',
+  '...bwwwbbwwfb...',
   '...bwwwbbwwwb...',
+  '...bbbbbbbbbb...',
+  '....ooo..ooo....',
+  '................',
+];
+
+/** 장이 척추 위에서 세로 띠로 선다 */
+export const NABI_STUDY_C: Grid = [
+  '................',
+  '...ff......ff...',
+  '...fff....fff...',
+  '...ffffffffff...',
+  '...ffffffffff...',
+  '...ffoffffoff...',
+  '...ffffppffff...',
+  '...ffffffffff...',
+  '....ffffffff....',
+  '....ffffffff....',
+  '...bbbbbwbbbb...',
+  '...bwwwbwbbbb...',
+  '...bwwwbwbfbb...',
+  '...bbbbbbbbbb...',
+  '....ooo..ooo....',
+  '................',
+];
+
+/** 넘어간 장이 왼쪽 페이지에 앉는다 */
+export const NABI_STUDY_D: Grid = [
+  '................',
+  '...ff......ff...',
+  '...fff....fff...',
+  '...ffffffffff...',
+  '...ffffffffff...',
+  '...ffoffffoff...',
+  '...ffffppffff...',
+  '...ffffffffff...',
+  '....ffffffff....',
+  '....ffffffff....',
+  '...bbbbbbbbbb...',
+  '...bwwwwbwwwb...',
+  '...bwwwwbwwwb...',
   '...bbbbbbbbbb...',
   '....ooo..ooo....',
   '................',

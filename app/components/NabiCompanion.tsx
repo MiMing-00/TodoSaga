@@ -16,9 +16,12 @@ import {
   NABI_STRETCH,
   NABI_STUDY_A,
   NABI_STUDY_B,
+  NABI_STUDY_C,
+  NABI_STUDY_D,
   type Grid,
 } from '@/lib/sprite';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   NABI_LIMIT_LINES,
   NABI_LINES,
@@ -42,10 +45,27 @@ import { PixelSprite } from './PixelSprite';
  * - 점프에도 **좌·우 방향**이 있다. 걷기와 마찬가지로 가는 쪽을 본다
  * - **내용 패널 뒤로 지나간다.** 패널이 위(z-30)라 가려지고, 가려진 동안엔 만질 수도 없다
  */
-/** 두 프레임짜리 자세는 번갈아 재생한다 */
-const ANIMATED: Partial<Record<NabiMode, [Grid, Grid]>> = {
+/** 두 프레임 이상 자세는 차례로 재생한다 */
+/**
+ * 공부는 대부분 펼쳐 둔 채(A) 읽고, 가끔만 B→C→D로 장을 넘긴다.
+ * A를 여러 번 넣어 리듬을 만든다 — 매 틱 넘기면 책이 발작한다.
+ */
+const STUDY_CYCLE: Grid[] = [
+  NABI_STUDY_A,
+  NABI_STUDY_A,
+  NABI_STUDY_A,
+  NABI_STUDY_A,
+  NABI_STUDY_A,
+  NABI_STUDY_B,
+  NABI_STUDY_C,
+  NABI_STUDY_D,
+  NABI_STUDY_A,
+  NABI_STUDY_A,
+];
+
+const ANIMATED: Partial<Record<NabiMode, Grid[]>> = {
   walk: [NABI_SIDE_A, NABI_SIDE_B],
-  study: [NABI_STUDY_A, NABI_STUDY_B],
+  study: STUDY_CYCLE,
   clean: [NABI_CLEAN_A, NABI_CLEAN_B],
 };
 
@@ -82,6 +102,12 @@ const RARE_MODES: [NabiMode, number][] = [
   ['study', 0.18],
   ['clean', 0.18],
 ];
+
+/**
+ * 개발 확인용 — 책 읽기만 무한 반복.
+ * 그만하라고 하면 false로 되돌린다.
+ */
+const DEV_FORCE_STUDY = false;
 
 function rareMode(): NabiMode {
   let r = Math.random();
@@ -159,7 +185,7 @@ export function NabiCompanion({
 }) {
   const [pos, setPos] = useState<Point>({ x: SIDEBAR + 60, y: 300 });
   const [dir, setDir] = useState<1 | -1>(1);
-  const [mode, setMode] = useState<NabiMode>('walk');
+  const [mode, setMode] = useState<NabiMode>(DEV_FORCE_STUDY ? 'study' : 'walk');
   const [step, setStep] = useState(0);
   const [airborne, setAirborne] = useState(false);
   /** 점프 진행도 0~1. 자세를 고르는 데 쓴다 */
@@ -167,7 +193,7 @@ export function NabiCompanion({
   const [bubble, setBubble] = useState<string | null>(null);
 
   const idle = useRef(0);
-  const modeRef = useRef<NabiMode>('walk');
+  const modeRef = useRef<NabiMode>(DEV_FORCE_STUDY ? 'study' : 'walk');
   const dirRef = useRef<1 | -1>(1);
   const targetX = useRef<number | null>(null);
   const jump = useRef<{
@@ -189,6 +215,15 @@ export function NabiCompanion({
     targetX.current = randomX();
 
     const id = setInterval(() => {
+      // 개발 확인: 책장만 계속 넘긴다
+      if (DEV_FORCE_STUDY) {
+        modeRef.current = 'study';
+        setMode('study');
+        const n = ANIMATED.study!.length;
+        setStep((sp) => (sp + 1) % n);
+        return;
+      }
+
       const m = modeRef.current;
       let next: NabiMode = m;
 
@@ -216,9 +251,10 @@ export function NabiCompanion({
       modeRef.current = next;
       setMode(next);
 
-      // 책장·빗자루도 두 프레임을 오간다
+      // 책장·빗자루 프레임을 차례로 넘긴다
       if (next === 'study' || next === 'clean') {
-        setStep((sp) => (sp === 0 ? 1 : 0));
+        const n = ANIMATED[next]!.length;
+        setStep((sp) => (sp + 1) % n);
         return;
       }
       if (next !== 'walk') return;
@@ -311,11 +347,16 @@ export function NabiCompanion({
         ? NABI_JUMP_UP
         : NABI_JUMP_DOWN
     : frames
-      ? frames[step]
+      ? frames[step % frames.length]
       : STILL[mode as keyof typeof STILL];
   const nabi = buildNabi(grid, furId, accessoryId);
   const left = PET_LIMIT - petsToday;
   const asleep = mode === 'doze' || mode === 'sleep';
+  /** 걸을 때 착지(뚱) → 솟기(땅). 정수 픽셀로만 위아래 */
+  const walkBob = mode === 'walk' && !airborne ? (step === 0 ? 2 : -2) : 0;
+  /** 말풍선은 사이드바(z-30) 위에 따로 띄운다 */
+  const bubbleX = Math.max(pos.x + SIZE / 2, SIDEBAR + 24);
+  const bubbleY = pos.y + walkBob - 36;
 
   function pet() {
     const ok = onPet();
@@ -352,14 +393,8 @@ export function NabiCompanion({
     >
       <div
         className="pointer-events-auto absolute"
-        style={{ transform: `translate(${pos.x}px, ${pos.y}px)` }}
+        style={{ transform: `translate(${pos.x}px, ${pos.y + walkBob}px)` }}
       >
-        {bubble && (
-          <span className="absolute -top-8 left-1/2 -translate-x-1/2 border-2 border-ink bg-surface px-2 py-1 font-display text-[10px] whitespace-nowrap text-ink shadow-pixel-sm">
-            {bubble}
-          </span>
-        )}
-
         {asleep && !bubble && (
           <span className="animate-blink absolute -top-4 left-full font-display text-[10px] text-ink-disabled">
             {mode === 'sleep' ? 'zZZ' : 'zZ'}
@@ -375,7 +410,8 @@ export function NabiCompanion({
               : `오늘은 이만 하시지요 · ${affectionName(affection)}`
           }
           aria-label={`나비를 쓰다듬기. 호감도 ${affection}, ${affectionName(affection)}`}
-          className="press block cursor-pointer"
+          /* press 그림자는 scaleX 반전 때 좌하단에 검은 선으로 보인다 */
+          className="block cursor-pointer focus-visible:outline-none"
           /* 기본 그림이 **왼쪽**을 보고 있다.
              오른쪽으로 갈 때(dir=1) 뒤집어야 진행 방향을 본다 */
           style={{ transform: `scaleX(${dir === 1 ? -1 : 1})` }}
@@ -383,6 +419,22 @@ export function NabiCompanion({
           <PixelSprite layers={nabi.layers} palette={nabi.palette} size={SIZE} />
         </button>
       </div>
+
+      {/* 말풍선만 z-40. 나비(z-20)는 사이드바 뒤로 가도 대사는 가리지 않는다 */}
+      {bubble &&
+        createPortal(
+          <span
+            className="pointer-events-none fixed z-40 hidden border-2 border-ink bg-surface px-2 py-1 font-display text-[10px] whitespace-nowrap text-ink sm:block"
+            style={{
+              left: bubbleX,
+              top: bubbleY,
+              transform: 'translateX(-50%)',
+            }}
+          >
+            {bubble}
+          </span>,
+          document.body,
+        )}
     </div>
   );
 }

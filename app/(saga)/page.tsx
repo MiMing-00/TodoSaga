@@ -3,6 +3,7 @@
 import { generateQuests, rerollQuest } from '@/app/actions/quest';
 import { Panel, PixelButton, SegmentGauge } from '@/app/components/Pixel';
 import { QuestCard } from '@/app/components/QuestCard';
+import { QuestScrollOverlay, type ScrollPhase } from '@/app/components/QuestScrollOverlay';
 import { Routines } from '@/app/components/Routines';
 import { activeDebuffPercent } from '@/lib/daily';
 import { formatKorean, todayKey } from '@/lib/date';
@@ -43,6 +44,8 @@ export default function QuestPage() {
   const [rerollingIndex, setRerollingIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [scrollPhase, setScrollPhase] = useState<ScrollPhase | null>(null);
+  const [scrollCount, setScrollCount] = useState(0);
 
   const today = todayKey();
   const quests = days[today] ?? [];
@@ -60,6 +63,7 @@ export default function QuestPage() {
     }
     setLoading(true);
     setError('');
+    setScrollPhase('writing');
 
     // 장착 중인 도구가 AI에게 추가 지시를 넣는다 — 이 앱의 핵심 가치
     const toolIds = (equipped.tools ?? [])
@@ -68,10 +72,16 @@ export default function QuestPage() {
 
     const result = await generateQuests(userInput, job, toolIds);
 
-    if (result.error) setError(result.error);
-    else if (result.quests) {
+    if (result.error) {
+      setError(result.error);
+      setScrollPhase(null);
+    } else if (result.quests) {
       addQuests(today, result.quests);
       setUserInput('');
+      setScrollCount(result.quests.length);
+      setScrollPhase('unfurl');
+    } else {
+      setScrollPhase(null);
     }
     setLoading(false);
   }
@@ -133,6 +143,15 @@ export default function QuestPage() {
 
   return (
     <>
+      {scrollPhase && (
+        <QuestScrollOverlay
+          phase={scrollPhase}
+          questCount={scrollCount}
+          onUnfurled={() => setScrollPhase('success')}
+          onDone={() => setScrollPhase(null)}
+        />
+      )}
+
       <div>
         <h1 className="sm:hidden">
           <Wordmark size="lg" />
