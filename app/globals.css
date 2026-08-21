@@ -60,7 +60,8 @@
 
   /* Type */
   --font-display: "Galmuri11", ui-monospace, monospace;
-  --font-logo: "Galmuri14", "Galmuri11", ui-monospace, monospace;
+  /* 로고 전용 — 영문 NABI SAGA. UI 픽셀(Galmuri)과 겹치지 않게 분리 */
+  --font-logo: var(--font-logo-pixel), "Galmuri14", "Galmuri11", ui-monospace, monospace;
   --font-body: "Pretendard", -apple-system, system-ui, sans-serif;
 
   /* Elevation — blur 0, spread 0. 픽셀에 흐림은 없다 */

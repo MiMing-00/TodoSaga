@@ -1,5 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { Silkscreen } from "next/font/google";
 import "./globals.css";
+
+const logoFont = Silkscreen({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-logo-pixel",
+});
 
 export const metadata: Metadata = {
   title: "나비사가",
@@ -27,7 +34,7 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css"
         />
       </head>
-      <body className="antialiased">{children}</body>
+      <body className={`${logoFont.variable} antialiased`}>{children}</body>
     </html>
   );
 }
