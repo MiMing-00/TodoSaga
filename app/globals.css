@@ -1,64 +1,378 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ─────────────────────────────────────────────
+   Fonts
+   Galmuri11 : 한글 지원 픽셀 폰트 — 제목/수치/칩 전용
+   Pretendard: 본문 — AI가 생성하는 긴 텍스트의 가독성 담당
+   ───────────────────────────────────────────── */
+@font-face {
+  font-family: "Galmuri11";
+  src: url("https://cdn.jsdelivr.net/npm/galmuri/dist/Galmuri11.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* 로고 전용. 본문과 같은 글꼴을 키우기만 하면 '큰 글씨'일 뿐 로고가 안 된다 */
+@font-face {
+  font-family: "Galmuri14";
+  src: url("https://cdn.jsdelivr.net/npm/galmuri/dist/Galmuri14.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ─────────────────────────────────────────────
+   Design tokens — DESIGN.md 참조
+   ───────────────────────────────────────────── */
+@theme {
+  /* Canvas & Ink — 양피지 */
+  --color-canvas: #f4eee0;
+  --color-surface: #fffbf0;
+  --color-sunken: #e8dfcb;
+  --color-ink: #2e2a24;
+  --color-ink-muted: #6b6154;
+  --color-ink-disabled: #a79b87;
+
+  /* Brand */
+  --color-primary: #5a3fd6;
+  --color-primary-press: #4530a8;
+
+  /* Semantic */
+  --color-exp: #2e7d32;
+  --color-gold: #b45309;
+  --color-gold-ink: #7c2d12;
+  --color-danger: #c0392b;
+
+  /* Pastel tints — Notion 계보. 데이터(카테고리)에만 사용 */
+  --color-tint-peach: #ffe8d4;
+  --color-tint-rose: #fde0ec;
+  --color-tint-mint: #d9f3e1;
+  --color-tint-lavender: #e6e0f5;
+  --color-tint-sky: #dcecfa;
+  --color-tint-yellow: #fef3c7;
+  --color-tint-gray: #ede7da;
+
+  /* Category ink */
+  --color-str: #9f1239;
+  --color-int: #1e40af;
+  --color-cha: #5b21b6;
+  --color-vit: #166534;
+  --color-luk: #854d0e;
+
+  /* Type */
+  --font-display: "Galmuri11", ui-monospace, monospace;
+  --font-logo: "Galmuri14", "Galmuri11", ui-monospace, monospace;
+  --font-body: "Pretendard", -apple-system, system-ui, sans-serif;
+
+  /* Elevation — blur 0, spread 0. 픽셀에 흐림은 없다 */
+  --shadow-pixel: 4px 4px 0 0 #2e2a24;
+  --shadow-pixel-sm: 2px 2px 0 0 #2e2a24;
+  --shadow-pixel-lg: 6px 6px 0 0 #2e2a24;
+
+  /* Motion — 프레임이 끊겨야 픽셀이다 */
+  --animate-blink: blink 1s steps(2, end) infinite;
+  --animate-pop-in: pop-in 0.18s steps(3, end) both;
+  --animate-float: float 2.4s steps(4, end) infinite;
+
+  /* 뽑기 — 흔들림이 빨라질수록 기대가 커진다. 거짓 예고는 하지 않는다 */
+  --animate-box-rise: box-rise 200ms steps(3, end) both;
+  --animate-box-shake-slow: box-shake 200ms steps(2, end) infinite;
+  --animate-box-shake: box-shake 140ms steps(2, end) infinite;
+  --animate-box-shake-fast: box-shake 90ms steps(2, end) infinite;
+  --animate-box-shake-rush: box-shake 60ms steps(2, end) infinite;
+  --animate-beam-up: beam-up 160ms steps(4, end) both;
+  --animate-burst: burst 420ms steps(5, end) both;
+  --animate-twinkle: twinkle 480ms steps(2, end) infinite;
+
+  /* 강화 */
+  --animate-enhance-shake: enhance-shake 140ms steps(2, end) infinite;
+  --animate-enhance-shake-fast: enhance-shake 60ms steps(2, end) infinite;
+  --animate-enhance-shake-fail: enhance-shake-fail 50ms steps(2, end) 4;
+  --animate-enhance-shake-break: enhance-shake-break 70ms steps(2, end) 6;
+  --animate-enhance-flash: enhance-flash 120ms steps(2, end) 2;
+  --animate-screen-flash-danger: screen-flash-danger 120ms steps(2, end) 1;
+  --animate-enhance-pop: enhance-pop 120ms steps(3, end) both;
+  --animate-enhance-break: enhance-break 240ms steps(3, end) both;
+  --animate-spark: spark 180ms steps(3, end) both;
+  --animate-debris: spark 220ms steps(4, end) both;
+  --animate-gain-rise: gain-rise 700ms steps(5, end) both;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
   }
 }
 
+@keyframes pop-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ── 뽑기 연출 ── */
+@keyframes box-rise {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes box-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes beam-up {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* ── 팡파레 ──
+   빛기둥은 '위에서 뭔가 내려온다'는 말이라 상자를 열었을 때와 안 맞는다.
+   열린 상자에서는 사방으로 터져 나가야 한다.
+   조각은 각자 제 방향(--dx/--dy)으로 날아가며 사라진다. */
+@keyframes burst {
+  from {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--dx), var(--dy)) scale(0.4);
+    opacity: 0;
+  }
+}
+
+/* 터진 뒤에도 무대가 심심하지 않게 옆에서 계속 반짝인다 */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.25;
+    transform: scale(0.6);
+  }
+}
+
+/* ── 강화 연출 ──
+   세 결과는 색이 아니라 **움직임의 축**으로 구분한다.
+   성공 ↑ / 유지 ↔ / 파괴 ↓ */
+@keyframes enhance-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes enhance-shake-fail {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes enhance-shake-break {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes enhance-flash {
+  0%,
+  100% {
+    background-color: var(--color-surface);
+  }
+  50% {
+    background-color: #ffffff;
+  }
+}
+
+@keyframes screen-flash-danger {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: var(--color-danger);
+  }
+}
+
+@keyframes enhance-pop {
+  from {
+    transform: scale(1.4);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes enhance-break {
+  0% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+
+@keyframes spark {
+  from {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--dx), var(--dy));
+    opacity: 0;
+  }
+}
+
+/* 완수 — 가장 자주 하는 행동인데 연출이 없었다 */
+@keyframes gain-rise {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* ─────────────────────────────────────────────
+   Base
+   단일 라이트 테마로 고정한다. 양피지 캔버스가 이 시스템의
+   정체성이라 다크 모드로 뒤집으면 아이덴티티가 사라진다.
+   ───────────────────────────────────────────── */
+html {
+  color-scheme: light;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-canvas);
+  /* 8px 디더 텍스처 — 종이의 결. 아주 옅게 */
+  background-image: radial-gradient(
+    var(--color-sunken) 1px,
+    transparent 1px
+  );
+  background-size: 8px 8px;
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* 픽셀 아트 스타일 */
-.pixel-text {
+/* 픽셀 폰트에는 letter-spacing 금지 — 비트맵 그리드가 깨진다 */
+.font-display,
+[class*="font-display"] {
+  letter-spacing: 0 !important;
+}
+
+/* 스프라이트/이모지 픽셀 렌더링 */
+.pixelated {
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 0.5px;
 }
 
-.pixel-container {
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
+/* 눌림 물리 — 픽셀 UI의 핵심 피드백 */
+.press {
+  transition: transform 60ms steps(2, end), box-shadow 60ms steps(2, end);
+}
+.press:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-pixel-sm);
 }
 
-.pixel-input {
-  font-family: 'Courier New', monospace;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
+/* 포커스 링에 blur를 쓰지 않는다.
+   입력칸은 제외한다 — 테두리가 이미 primary로 바뀌는데
+   아웃라인까지 겹치면 줄이 두 개로 보인다 */
+:focus-visible:not(input):not(textarea) {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
-.pixel-button {
-  font-family: 'Courier New', monospace;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  cursor: pointer;
+::selection {
+  background: var(--color-primary);
+  color: #fff;
 }
 
-.pixel-card {
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  border: 4px solid #000;
-  box-shadow: 4px 4px 0 0 #000;
+/* 픽셀 스크롤바 */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-sunken);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-ink);
+  border: 3px solid var(--color-sunken);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

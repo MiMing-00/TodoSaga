@@ -1,71 +1,105 @@
 'use client';
 
 import { loginAction } from '@/app/actions/auth';
+import { PixelButton } from '@/app/components/Pixel';
+import { PixelSprite } from '@/app/components/PixelSprite';
+import { Wordmark } from '@/app/components/Wordmark';
+import { NABI, NABI_PALETTE } from '@/lib/sprite';
 import { useState } from 'react';
 
 export default function LoginPage() {
   const [id, setId] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
-    
-    // 간단한 클라이언트 사이드 검증
-    if (!id) {
+
+    if (!id.trim()) {
       setError('ID를 입력하세요.');
       return;
     }
-    
+
     const formData = new FormData();
-    formData.append('id', id);
-    
+    formData.append('id', id.trim());
+
+    setLoading(true);
     try {
       await loginAction(formData);
-    } catch (err) {
+    } catch {
       setError('잘못된 ID입니다.');
+      setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#87CEEB] to-[#E0F6FF] flex items-center justify-center p-4">
-      <div className="pixel-container bg-white border-4 border-black shadow-[8px_8px_0_0_#000] max-w-md w-full">
-        <div className="p-8 space-y-6">
-          <div className="text-center">
-            <h1 className="pixel-text text-4xl font-bold mb-2 text-black">
-              🎀 TODOSAGA 🎀
-            </h1>
-            <p className="pixel-text text-sm text-gray-600">
-              ID를 입력하세요
-            </p>
+    <div className="flex min-h-dvh items-center justify-center px-4 py-10">
+      <div className="w-full max-w-sm">
+        {/* 타이틀 */}
+        <div className="mb-7 text-center">
+          <div className="animate-float mb-4 flex justify-center">
+            <PixelSprite
+              layers={[NABI]}
+              palette={NABI_PALETTE}
+              size={64}
+            />
           </div>
+          <h1>
+            <Wordmark size="lg" />
+          </h1>
+          {/* 후킹은 기능 설명이 아니라 **사건**이어야 한다.
+              "미루던 일이 퀘스트가 됩니다"는 기능 소개문이라 아무 감흥이 없다.
+              웹소설 제목처럼 '~했더니 ~되었다'로 쓰면 한 줄에 이야기가 생긴다 */}
+          <p className="mt-4 font-display text-[13px] leading-relaxed break-keep text-ink">
+            말하는 고양이를 집사로 들였더니
+            <span className="mt-1 block">미루던 일이 전부 의뢰서가 되었다</span>
+            <span className="mt-2.5 block text-[10px] text-ink-disabled">
+              집사 나비가 오늘의 의뢰서를 씁니다
+            </span>
+          </p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
+        {/* 로그인 창 */}
+        <section className="border-[3px] border-ink bg-surface shadow-pixel">
+          <header className="border-b-[3px] border-ink bg-ink px-3 py-2">
+            <h2 className="font-display text-[13px] text-canvas">▸ 입장하기</h2>
+          </header>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5">
+            <label className="flex flex-col gap-1.5">
+              <span className="font-display text-[11px] text-ink-muted">ID</span>
               <input
                 type="text"
                 value={id}
                 onChange={(e) => setId(e.target.value)}
-                placeholder="ID 입력"
-                className="pixel-input w-full px-4 py-3 border-4 border-black bg-white text-black placeholder-gray-400 focus:outline-none focus:shadow-[4px_4px_0_0_#000] transition-shadow"
+                placeholder="ID를 입력하세요"
+                className="w-full border-[3px] border-ink bg-sunken px-3 py-2.5 text-sm text-ink placeholder:text-ink-disabled focus:border-primary focus:outline-none focus-visible:outline-none"
+                autoComplete="username"
                 required
+                disabled={loading}
               />
-            </div>
+            </label>
 
             {error && (
-              <div className="pixel-text text-red-600 text-sm text-center">
-                {error}
-              </div>
+              <p className="border-2 border-danger bg-surface px-3 py-2 font-display text-[11px] text-danger">
+                ! {error}
+              </p>
             )}
 
-            <button
+            <PixelButton
               type="submit"
-              className="pixel-button w-full py-3 bg-[#FF6B6B] border-4 border-black text-white font-bold hover:bg-[#FF5252] hover:shadow-[4px_4px_0_0_#000] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
+              disabled={loading}
+              className="w-full py-3 text-sm"
             >
-              입장하기
-            </button>
+              {loading ? (
+                <span className="animate-blink">입장 중...</span>
+              ) : (
+                '입장하기'
+              )}
+            </PixelButton>
           </form>
-        </div>
+        </section>
       </div>
     </div>
   );
