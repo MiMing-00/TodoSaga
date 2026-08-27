@@ -98,7 +98,8 @@ export function EnhanceDialog({
   const busy = phase === 'tense' || phase === 'judge';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
+    /* 바깥은 스크롤하지 않는다 — 여기가 스크롤되면 오버레이가 첫 화면만 덮는다 */
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0"
         style={{
@@ -121,9 +122,9 @@ export function EnhanceDialog({
         role="dialog"
         aria-modal="true"
         aria-label="장비 강화"
-        className="relative my-auto w-full max-w-sm border-[3px] border-ink bg-surface shadow-pixel"
+        className="relative flex max-h-[min(36rem,calc(100dvh-2rem))] w-full max-w-sm flex-col border-[3px] border-ink bg-surface shadow-pixel"
       >
-        <header className="flex items-center justify-between gap-2 border-b-[3px] border-ink bg-ink px-3 py-2">
+        <header className="flex shrink-0 items-center justify-between gap-2 border-b-[3px] border-ink bg-ink px-3 py-2">
           <p className="font-display text-[13px] text-canvas">▸ 벼림대</p>
           <button
             type="button"
@@ -135,7 +136,7 @@ export function EnhanceDialog({
           </button>
         </header>
 
-        <div className="flex flex-col gap-4 p-4 sm:p-5">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
           {/* 대상 */}
           <div
             className={`flex items-center gap-3 border-2 border-ink px-3 py-2.5 ${

@@ -1,9 +1,11 @@
 'use client';
 
-import { buildMonth, density, shiftMonth } from '@/lib/chronicle';
+import { buildMonth, density, listBookMonths, monthKey, shiftMonth } from '@/lib/chronicle';
 import { formatKorean, todayKey, WEEKDAY } from '@/lib/date';
 import { CATEGORY, CATEGORY_ORDER, type Quest } from '@/lib/quest';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { BookBindOverlay } from './BookBindOverlay';
+import { Bookshelf } from './Bookshelf';
 import { Chip, Panel, PixelButton } from './Pixel';
 
 /**
@@ -23,7 +25,16 @@ const DENSITY: Record<number, string> = {
   3: 'bg-primary text-white',
 };
 
-export function Chronicle({ days }: { days: Record<string, Quest[]> }) {
+export function Chronicle({
+  days,
+  lastSeenBookMonth,
+  onSeenBook,
+}: {
+  days: Record<string, Quest[]>;
+  /** 책장을 마지막으로 확인한 달(YYYY-MM). null이면 이 기능을 처음 켜는 것 */
+  lastSeenBookMonth: string | null;
+  onSeenBook: (monthKey: string) => void;
+}) {
   const today = todayKey();
   const now = new Date();
   const [{ year, month }, setMonth] = useState({
@@ -41,8 +52,58 @@ export function Chronicle({ days }: { days: Record<string, Quest[]> }) {
   );
   const hasRecord = view.totalDone > 0;
 
+  // 책장 — docs/LORE.md "권(卷) — 사가의 매듭"
+  const slots = listBookMonths(days, today);
+  const writingSlot = slots.find((s) => s.status === 'writing');
+  const currentKey = writingSlot ? writingSlot.key : (slots.at(-1)?.key ?? monthKey(year, month));
+  // 지금 펼쳐 보고 있는 달이 이미 묶인 책이면, 그 제목도 같이 보여준다
+  const viewedSlot = slots.find((s) => s.year === year && s.month === month);
+
+  const [boundOverlay, setBoundOverlay] = useState<{
+    volume: number;
+    title: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (slots.length === 0) return;
+
+    // 처음 켜는 것 — 지나간 달을 소급해서 축하하지 않는다. 조용히 오늘로 맞춘다
+    if (lastSeenBookMonth === null) {
+      onSeenBook(currentKey);
+      return;
+    }
+    if (lastSeenBookMonth >= currentKey) return;
+
+    // 며칠을 비웠어도 정산 화면을 여러 번 띄우지 않는다 — 가장 최근 한 권만 축하한다
+    const newlyBound = [...slots]
+      .reverse()
+      .find((s) => s.status === 'bound' && s.key > lastSeenBookMonth);
+
+    if (newlyBound) {
+      setBoundOverlay({
+        volume: newlyBound.volume!,
+        title: newlyBound.title!,
+      });
+    } else {
+      onSeenBook(currentKey);
+    }
+    // 마운트 시 한 번만 — 이후 완수로 days가 바뀔 때마다 다시 확인할 필요는 없다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="flex flex-col gap-6">
+      {boundOverlay && (
+        <BookBindOverlay
+          volume={boundOverlay.volume}
+          title={boundOverlay.title}
+          onDone={() => {
+            onSeenBook(currentKey);
+            setBoundOverlay(null);
+          }}
+        />
+      )}
+
       <Panel
         title="사가의 서"
         right={
@@ -52,6 +113,18 @@ export function Chronicle({ days }: { days: Record<string, Quest[]> }) {
         }
       >
         <div className="flex flex-col gap-4">
+          {/* 책장 — 캘린더와 한 몸이다. 지나간 달을 책으로 세워 두고,
+              그 책등을 눌러 아래 달력을 그 달로 넘긴다 */}
+          <Bookshelf
+            slots={slots}
+            onPick={(y, m) => {
+              setMonth({ year: y, month: m });
+              setPicked(null);
+            }}
+          />
+
+          <div className="border-t-2 border-dashed border-ink-disabled" />
+
           {/* 달 이동 */}
           <div className="flex items-center justify-between gap-2">
             <PixelButton
@@ -158,7 +231,9 @@ export function Chronicle({ days }: { days: Record<string, Quest[]> }) {
           {hasRecord ? (
             <div className="border-2 border-ink bg-sunken px-3 py-2.5">
               <p className="mb-2 font-display text-[11px] text-ink-muted">
-                이 장의 기록
+                {viewedSlot?.status === 'bound'
+                  ? `제${viewedSlot.volume}권 「${viewedSlot.title}」`
+                  : '이 장의 기록'}
               </p>
               <div className="flex flex-wrap gap-2 font-display text-[12px]">
                 <span className="text-ink tabular-nums">

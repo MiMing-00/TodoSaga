@@ -5,6 +5,7 @@ import { NabiPanel } from '@/app/components/NabiPanel';
 import { StatPanel } from '@/app/components/StatPanel';
 import { StreakStrip } from '@/app/components/StreakStrip';
 import { equippedCosmetics } from '@/lib/inventory';
+import { ashLevelFor, shadowLevelFor } from '@/lib/daily';
 import { todayKey } from '@/lib/date';
 import { levelFromExp } from '@/lib/quest';
 import { activeStreak, useSagaStore } from '@/lib/store';
@@ -34,6 +35,10 @@ export default function CharacterPage() {
   const dressNabi = useSagaStore((s) => s.dressNabi);
   const petNabi = useSagaStore((s) => s.petNabi);
 
+  const today = todayKey();
+  const shadowLevel = shadowLevelFor(lastClearedDate, today);
+  const ashLevel = ashLevelFor(days, today);
+
   return (
     <>
       <h1 className="font-display text-lg text-ink sm:text-xl">▸ 캐릭터</h1>
@@ -46,6 +51,7 @@ export default function CharacterPage() {
         classChanges={classChanges}
         cosmetics={equippedCosmetics(inventory, equipped)}
         onChangeClass={changeClass}
+        ashLevel={ashLevel}
       />
 
       <StreakStrip
@@ -62,7 +68,7 @@ export default function CharacterPage() {
       <NabiPanel
         affection={affection}
         claimed={claimedAffection}
-        petsToday={petLog.date === todayKey() ? petLog.count : 0}
+        petsToday={petLog.date === today ? petLog.count : 0}
         inventory={inventory}
         furId={nabiFur}
         accessoryId={nabiAccessory}
@@ -71,7 +77,8 @@ export default function CharacterPage() {
           if (name) showToast(`나비와 ${name} 사이가 되었습니다`);
         }}
         onDress={dressNabi}
-        onPet={() => petNabi(todayKey())}
+        onPet={() => petNabi(today)}
+        shadowLevel={shadowLevel}
       />
 
       <StatPanel stats={stats} />

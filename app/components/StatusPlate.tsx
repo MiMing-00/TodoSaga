@@ -3,6 +3,7 @@
 import type { CosmeticArt } from '@/lib/cosmetics';
 import type { Category } from '@/lib/quest';
 import { buildCharacterLayers } from '@/lib/sprite';
+import { LoreTip } from './LoreTip';
 import { PixelSprite } from './PixelSprite';
 
 /**
@@ -66,13 +67,15 @@ export function StatusPlate({
   );
 
   const fire = streak > 0 && (
-    <span
-      className="inline-flex items-center gap-0.5 font-display text-[11px] text-ink"
-      title={`불씨 ${streak}일째`}
+    <LoreTip
+      plain
+      hint={`불씨 ${streak}일째. 매일 다시 켜야 이어진다 — 밝을수록 녹이 옅어진다.`}
     >
-      <span aria-hidden>🔥</span>
-      <span className="tabular-nums">{streak}</span>
-    </span>
+      <span className="inline-flex items-center gap-0.5 font-display text-[11px] text-ink">
+        <span aria-hidden>🔥</span>
+        <span className="tabular-nums">{streak}</span>
+      </span>
+    </LoreTip>
   );
 
   if (variant === 'side') {

@@ -3,7 +3,7 @@
 import { loginAction } from '@/app/actions/auth';
 import { PixelButton } from '@/app/components/Pixel';
 import { PixelSprite } from '@/app/components/PixelSprite';
-import { Wordmark } from '@/app/components/Wordmark';
+import { WordmarkEmblem } from '@/app/components/Wordmark';
 import { NABI, NABI_PALETTE } from '@/lib/sprite';
 import { useState } from 'react';
 
@@ -46,7 +46,7 @@ export default function LoginPage() {
             />
           </div>
           <h1>
-            <Wordmark size="lg" />
+            <WordmarkEmblem />
           </h1>
           {/* 후킹은 기능 설명이 아니라 **사건**이어야 한다.
               "미루던 일이 퀘스트가 됩니다"는 기능 소개문이라 아무 감흥이 없다.

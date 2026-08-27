@@ -7,7 +7,12 @@ import { PixelSprite } from '@/app/components/PixelSprite';
 import { TabNav } from '@/app/components/TabNav';
 import { equippedCosmetics } from '@/lib/inventory';
 import { activeStreak, useSagaStore } from '@/lib/store';
-import { pendingCloseDate, summarize } from '@/lib/daily';
+import {
+  ashLevelFor,
+  pendingCloseDate,
+  shadowLevelFor,
+  summarize,
+} from '@/lib/daily';
 import { todayKey } from '@/lib/date';
 import { EXP_PER_LEVEL, expInLevel, levelFromExp } from '@/lib/quest';
 import { NABI, NABI_PALETTE } from '@/lib/sprite';
@@ -87,6 +92,9 @@ export default function SagaLayout({
   const today = todayKey();
   // 자정에 스스로 깨어날 수 없으니, 다음에 열었을 때 지나간 날을 정산한다
   const closeTarget = pendingCloseDate(days, closedDays, today);
+  // 그림자·재는 숫자로만 있지 않다 — 나비가 다니는 배경에도 얼룩으로 스민다
+  const shadowLevel = shadowLevelFor(lastClearedDate, today);
+  const ashLevel = ashLevelFor(days, today);
 
   const status = (variant: 'side' | 'strip') => (
     <StatusPlate
@@ -132,6 +140,8 @@ export default function SagaLayout({
         furId={nabiFur}
         accessoryId={nabiAccessory}
         onPet={() => petNabi(today)}
+        shadowLevel={shadowLevel}
+        ashLevel={ashLevel}
       />
 
       {closeTarget && (

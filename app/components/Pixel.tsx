@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import { HelpBody, HelpButton } from './HelpToggle';
 
 /**
  * 창(window) 형태의 패널. 상단에 잉크색 타이틀바가 붙는다.
@@ -9,20 +10,33 @@ import { useState, type ReactNode } from 'react';
 export function Panel({
   title,
   right,
+  help,
   children,
   className = '',
+  style,
+  headerStyle,
+  grimeStyle,
   collapsible = true,
   defaultOpen = true,
 }: {
   title: string;
   right?: ReactNode;
+  /** 타이틀바 우측 끝의 '?'. 주면 눌러서 펼칠 수 있는 설명이 생긴다 */
+  help?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** 몸통(테두리·배경) 인라인 오버라이드 — 그림자·재처럼 색 자체가 흐려져야 할 때 */
+  style?: React.CSSProperties;
+  /** 타이틀바 인라인 오버라이드. 항상 어두운 색이어야 흰 글자가 읽힌다 */
+  headerStyle?: React.CSSProperties;
+  /** 타이틀바 바로 밑의 얇은 그을음/먼지 띠. decayTint.ts의 decayGrimeStripStyle 참고 */
+  grimeStyle?: React.CSSProperties;
   /** 접을 수 없는 창도 있다 (예: 확인 패널) */
   collapsible?: boolean;
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [helpOpen, setHelpOpen] = useState(false);
   const shown = collapsible ? open : true;
 
   const heading = (
@@ -45,26 +59,51 @@ export function Panel({
     </>
   );
 
+  // '?'는 접기 버튼과 형제 요소여야 한다 — 버튼 안에 버튼을 넣으면 잘못된 마크업이다
   return (
     <section
       className={`border-[3px] border-ink bg-surface shadow-pixel ${className}`}
+      style={style}
     >
       {collapsible ? (
-        <h2>
+        <h2
+          className="flex items-center justify-between gap-2 border-b-[3px] border-ink bg-ink py-2 pr-2 pl-3"
+          style={headerStyle}
+        >
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={shown}
-            className="flex w-full items-center justify-between gap-2 border-b-[3px] border-ink bg-ink px-3 py-2 text-left"
+            className="flex flex-1 items-center justify-between gap-2 text-left"
           >
             {heading}
           </button>
+          {help && (
+            <HelpButton
+              open={helpOpen}
+              onToggle={() => setHelpOpen((v) => !v)}
+              dark
+            />
+          )}
         </h2>
       ) : (
-        <header className="flex items-center justify-between gap-2 border-b-[3px] border-ink bg-ink px-3 py-2">
+        <header
+          className="flex items-center justify-between gap-2 border-b-[3px] border-ink bg-ink py-2 pr-2 pl-3"
+          style={headerStyle}
+        >
           {heading}
+          {help && (
+            <HelpButton
+              open={helpOpen}
+              onToggle={() => setHelpOpen((v) => !v)}
+              dark
+            />
+          )}
         </header>
       )}
+
+      {grimeStyle && <div aria-hidden className="h-1.5" style={grimeStyle} />}
+      {help && <HelpBody open={helpOpen}>{help}</HelpBody>}
 
       {/*
         접기 애니메이션.

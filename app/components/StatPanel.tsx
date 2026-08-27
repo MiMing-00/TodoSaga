@@ -3,6 +3,7 @@
 import { CATEGORY, CATEGORY_ORDER } from '@/lib/quest';
 import { UNLOCK_STAT } from '@/lib/sprite';
 import type { Stats } from '@/lib/store';
+import { LoreTip } from './LoreTip';
 
 /**
  * 다섯 능력치의 누적 경험치.
@@ -16,7 +17,12 @@ export function StatPanel({ stats }: { stats: Stats }) {
   return (
     <div className="border-[3px] border-ink bg-surface p-4 shadow-pixel sm:p-5">
       <div className="mb-3 flex items-baseline justify-between gap-2 font-display text-[11px] sm:text-xs">
-        <span className="text-ink">용사의 자질</span>
+        <span className="text-ink">
+          <LoreTip hint="매일 그 자리에 다시 서는 사람. 특별한 일을 해내서가 아니라 매일 다시 서기 때문에 용사다.">
+            용사
+          </LoreTip>
+          의 자질
+        </span>
         <span className="tabular-nums text-ink-muted">누적 {total}</span>
       </div>
 
@@ -31,10 +37,9 @@ export function StatPanel({ stats }: { stats: Stats }) {
                 className={`flex w-[92px] shrink-0 items-baseline gap-1 font-display text-[11px] sm:w-[104px] sm:text-xs ${
                   value > 0 ? cat.ink : 'text-ink-disabled'
                 }`}
-                title={cat.lore}
               >
                 <span aria-hidden>{cat.icon}</span>
-                {cat.name}
+                <LoreTip hint={cat.lore}>{cat.name}</LoreTip>
                 <span className="text-[9px] text-ink-disabled">{cat.label}</span>
               </span>
 

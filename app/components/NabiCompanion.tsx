@@ -20,15 +20,19 @@ import {
   NABI_STUDY_D,
   type Grid,
 } from '@/lib/sprite';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { todayKey } from '@/lib/date';
 import {
+  NABI_ASH_LINES,
   NABI_LIMIT_LINES,
   NABI_LINES,
+  NABI_SHADOW_LINES,
   pickLine,
   type NabiMode,
 } from './nabiLines';
 import { PixelSprite } from './PixelSprite';
+import { ShadowBlotch } from './ShadowBlotch';
 
 /**
  * 배경을 거니는 나비.
@@ -170,18 +174,97 @@ function randomY(): number {
   return Math.round(minY + Math.random() * (maxY - minY));
 }
 
+/**
+ * 그림자·재 얼룩.
+ *
+ * docs/LORE.md "녹이란 무엇인가" / "재 — 무리해서 태운 불씨" — 둘 다
+ * 나비가 다니는 이 배경에 스민다. 얼룩은 매 렌더마다 자리를 바꾸면
+ * 안절부절못하는 것처럼 보이므로, **오늘 하루는 같은 자리**에 있도록
+ * 날짜로 시드를 고정한다.
+ */
+interface Blotch {
+  id: string;
+  kind: 'shadow' | 'ash';
+  x: number;
+  y: number;
+  size: number;
+  /** ShadowBlotch의 SHAPES 인덱스. 실루엣을 섞어야 한 무더기가 비처럼 안 보인다 */
+  shape: number;
+}
+
+const BLOTCH_OPACITY = [0, 0.22, 0.32, 0.42, 0.55];
+
+function hashSeed(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** mulberry32 — 시드 하나로 재현 가능한 난수. 암호 용도가 아니라 자리 배치용 */
+function seededRandom(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function buildBlotches(kind: Blotch['kind'], level: number, today: string): Blotch[] {
+  if (level <= 0) return [];
+  const rand = seededRandom(hashSeed(`${kind}:${today}:${level}`));
+  const { minX, maxX, minY, maxY } = bounds();
+  return Array.from({ length: level }, (_, i) => ({
+    id: `${kind}-${i}`,
+    kind,
+    x: Math.round(minX + rand() * (maxX - minX)),
+    y: Math.round(minY + rand() * (maxY - minY)),
+    size: 18 + Math.round(rand() * 14),
+    shape: Math.floor(rand() * 2),
+  }));
+}
+
+/** 걷다가 아직 마주치지 않은 얼룩(그림자든 재든) 위를 밟았는지 */
+const BLOTCH_REACT_RADIUS = 26;
+
+function nearbyUnreactedBlotch(
+  kind: Blotch['kind'],
+  pos: Point,
+  blotches: Blotch[],
+  reacted: Set<string>,
+): Blotch | null {
+  for (const b of blotches) {
+    if (b.kind !== kind || reacted.has(b.id)) continue;
+    const dx = pos.x + SIZE / 2 - b.x;
+    const dy = pos.y + SIZE / 2 - b.y;
+    if (dx * dx + dy * dy <= BLOTCH_REACT_RADIUS ** 2) return b;
+  }
+  return null;
+}
+
 export function NabiCompanion({
   affection,
   petsToday,
   furId,
   accessoryId,
   onPet,
+  shadowLevel = 0,
+  ashLevel = 0,
 }: {
   affection: number;
   petsToday: number;
   furId: string | null;
   accessoryId: string | null;
   onPet: () => boolean;
+  /** docs/LORE.md "녹이란 무엇인가" — 방치된 만큼(0~4) */
+  shadowLevel?: number;
+  /** docs/LORE.md "재 — 무리해서 태운 불씨" — 무리한 만큼(0~4) */
+  ashLevel?: number;
 }) {
   const [pos, setPos] = useState<Point>({ x: SIDEBAR + 60, y: 300 });
   const [dir, setDir] = useState<1 | -1>(1);
@@ -191,11 +274,26 @@ export function NabiCompanion({
   /** 점프 진행도 0~1. 자세를 고르는 데 쓴다 */
   const [phase, setPhase] = useState(0);
   const [bubble, setBubble] = useState<string | null>(null);
+  // 레벨이 바뀔 때만 다시 놓는다 — 매 렌더마다 흔들리면 안 된다. bounds()가
+  // window를 읽으므로 서버 렌더와는 항상 다르지만, 장식이라 하이드레이션
+  // 경고 대상이 아니다(그림자 자체가 "지금 이 화면"에서만 의미 있다)
+  const blotches = useMemo(
+    () => [
+      ...buildBlotches('shadow', shadowLevel, todayKey()),
+      ...buildBlotches('ash', ashLevel, todayKey()),
+    ],
+    [shadowLevel, ashLevel],
+  );
 
   const idle = useRef(0);
   const modeRef = useRef<NabiMode>(DEV_FORCE_STUDY ? 'study' : 'walk');
   const dirRef = useRef<1 | -1>(1);
   const targetX = useRef<number | null>(null);
+  /** 틱 루프는 마운트 시 한 번만 만들어지므로, 최신 위치·얼룩은 ref로 들여다본다 */
+  const posRef = useRef<Point>(pos);
+  const blotchesRef = useRef<Blotch[]>([]);
+  /** 한 번 놀란 자리는 얼룩이 새로 생기기 전까지 다시 놀라지 않는다 */
+  const reactedBlotches = useRef<Set<string>>(new Set());
   const jump = useRef<{
     fromX: number;
     toX: number;
@@ -205,6 +303,19 @@ export function NabiCompanion({
   } | null>(null);
   const bubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const waking = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 틱 루프 안에서 최신 위치를 읽기 위한 거울. setPos는 함수형 업데이트라
+  // 필요 없지만, 얼룩과의 거리를 재는 건 그 흐름 밖에서 해야 해서 따로 둔다
+  useEffect(() => {
+    posRef.current = pos;
+  }, [pos]);
+
+  // 틱 루프(마운트 시 한 번만 생성됨)가 최신 얼룩을 보게 거울에 담고,
+  // 얼룩이 새로 놓일 때마다 놀랄 기회도 새로 돌려준다
+  useEffect(() => {
+    blotchesRef.current = blotches;
+    reactedBlotches.current = new Set();
+  }, [blotches]);
 
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -229,8 +340,36 @@ export function NabiCompanion({
 
       if (m === 'walk') {
         idle.current = 0;
-        // 걷는 게 기본이다. 딴짓은 어쩌다 한 번만 — 100틱에 세 번쯤
-        next = Math.random() < RARE ? rareMode() : 'walk';
+
+        // 그림자·재 자리를 밟으면 딴짓 추첨보다 먼저 멈춰 선다 — 방치도 무리도
+        // 못 본 척하지 않는 게 나비다(docs/LORE.md "그렇다면 왜 하필 용사인가").
+        // 반응은 다르게 — 그림자는 놀라 멈칫하고, 재는 몸이 뻐근해 기지개를 켠다
+        const shadowHit = nearbyUnreactedBlotch(
+          'shadow',
+          posRef.current,
+          blotchesRef.current,
+          reactedBlotches.current,
+        );
+        const ashHit =
+          !shadowHit &&
+          nearbyUnreactedBlotch(
+            'ash',
+            posRef.current,
+            blotchesRef.current,
+            reactedBlotches.current,
+          );
+        const hit = shadowHit || ashHit;
+
+        if (hit) {
+          reactedBlotches.current.add(hit.id);
+          next = shadowHit ? 'sit' : 'stretch';
+          setBubble(pickLine(shadowHit ? NABI_SHADOW_LINES : NABI_ASH_LINES));
+          if (bubbleTimer.current) clearTimeout(bubbleTimer.current);
+          bubbleTimer.current = setTimeout(() => setBubble(null), 2400);
+        } else {
+          // 걷는 게 기본이다. 딴짓은 어쩌다 한 번만 — 100틱에 세 번쯤
+          next = Math.random() < RARE ? rareMode() : 'walk';
+        }
       } else if (m === 'stretch') {
         idle.current = 0;
         next = Math.random() < 0.5 ? 'walk' : 'stretch';
@@ -391,6 +530,17 @@ export function NabiCompanion({
       className="pointer-events-none fixed inset-0 z-20 hidden sm:block"
       aria-hidden={false}
     >
+      {blotches.map((b) => (
+        <ShadowBlotch
+          key={b.id}
+          kind={b.kind}
+          shape={b.shape}
+          size={b.size}
+          opacity={BLOTCH_OPACITY[b.kind === 'shadow' ? shadowLevel : ashLevel]}
+          style={{ left: b.x, top: b.y }}
+        />
+      ))}
+
       <div
         className="pointer-events-auto absolute"
         style={{ transform: `translate(${pos.x}px, ${pos.y + walkBob}px)` }}

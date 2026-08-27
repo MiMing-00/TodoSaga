@@ -4,6 +4,7 @@ import { generateQuests, rerollQuest } from '@/app/actions/quest';
 import { Panel, PixelButton, SegmentGauge } from '@/app/components/Pixel';
 import { QuestCard } from '@/app/components/QuestCard';
 import { QuestScrollOverlay, type ScrollPhase } from '@/app/components/QuestScrollOverlay';
+import { LoreTip } from '@/app/components/LoreTip';
 import { Routines } from '@/app/components/Routines';
 import { activeDebuffPercent } from '@/lib/daily';
 import { formatKorean, todayKey } from '@/lib/date';
@@ -174,7 +175,11 @@ export default function QuestPage() {
 
       {debuffPercent > 0 && (
         <p className="border-2 border-danger bg-surface px-3 py-2 font-display text-[11px] leading-relaxed break-keep text-danger">
-          어제 놓친 의뢰가 그림자로 남았습니다. 오늘 하루 EXP가 {debuffPercent}%
+          어제 놓친 의뢰가{' '}
+          <LoreTip hint="용사가 만드는 게 아니라, 방치된 자리에 저절로 스며드는 낡음. 무기로는 벨 수 없고, 오늘의 불씨로만 밀려난다.">
+            녹
+          </LoreTip>
+          으로 남았습니다. 오늘 하루 EXP가 {debuffPercent}%
           줄어듭니다.
           <span className="mt-1 block text-ink-muted">
             불씨는 그대로예요. 오늘 다시 채우면 됩니다.

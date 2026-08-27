@@ -15,6 +15,8 @@ import {
 } from '@/lib/sprite';
 import type { Stats } from '@/lib/store';
 import { useState } from 'react';
+import { decayBodyStyle, decayGrimeStripStyle } from './decayTint';
+import { HelpBody, HelpButton } from './HelpToggle';
 import { PixelButton } from './Pixel';
 import { PixelSprite } from './PixelSprite';
 
@@ -37,6 +39,7 @@ export function Character({
   classChanges,
   cosmetics = [],
   onChangeClass,
+  ashLevel = 0,
 }: {
   stats: Stats;
   level: number;
@@ -46,10 +49,18 @@ export function Character({
   /** 장착 중인 치장. 캐릭터에 겹쳐 그린다 */
   cosmetics?: CosmeticArt[];
   onChangeClass: (key: Category) => void;
+  /**
+   * 무리한 만큼(0~4, docs/LORE.md "재 — 무리해서 태운 불씨"). 개수로 세지
+   * 않는다(decayTint.ts) — 용사를 감싼 이 카드 자체의 색이 흐려진다.
+   * 그림자는 나비 쪽 패널(NabiPanel) 몫이다.
+   */
+  ashLevel?: number;
 }) {
   const [view, setView] = useState<View>('idle');
   /** 고른 직후 바로 적용하지 않는다 — 되돌릴 수 없는 선택이라 한 번 더 묻는다 */
   const [pending, setPending] = useState<Category | null>(null);
+  /** 이 카드엔 Panel처럼 타이틀바가 없어서, '?'를 직접 붙인다 */
+  const [ashHelpOpen, setAshHelpOpen] = useState(false);
 
   const cls = CLASSES[charClass];
   const dressed = buildCharacterLayers(charClass, cosmetics);
@@ -76,7 +87,25 @@ export function Character({
     .length;
 
   return (
-    <div className="flex flex-col gap-4 border-[3px] border-ink bg-surface p-4 shadow-pixel sm:p-5">
+    <div
+      className="relative flex flex-col gap-4 border-[3px] border-ink bg-surface p-4 shadow-pixel sm:p-5"
+      style={decayBodyStyle('ash', ashLevel)}
+    >
+      {/* 얇은 그을음 띠 — Panel의 grimeStyle과 같은 것. 여긴 타이틀바가 없어 카드 맨 위에 바로 깐다 */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-1.5"
+        style={decayGrimeStripStyle('ash', ashLevel)}
+      />
+      {ashLevel > 0 && (
+        <span className="absolute top-3 right-3 sm:top-3.5 sm:right-3.5">
+          <HelpButton
+            open={ashHelpOpen}
+            onToggle={() => setAshHelpOpen((v) => !v)}
+          />
+        </span>
+      )}
+
       <div className="flex items-center gap-4">
         <div className="flex h-[88px] w-[88px] shrink-0 items-center justify-center border-2 border-ink bg-sunken sm:h-24 sm:w-24">
           <div className="animate-float">
@@ -125,6 +154,22 @@ export function Character({
           <span className={CATEGORY[drift].ink}>{CATEGORY[drift].name}</span>{' '}
           쪽으로 더 기울어 있습니다.
         </p>
+      )}
+
+      {/* 개수를 세지 않는다 — 카드 자체의 색이 이미 흐려져 있다(위 style·그을음 띠).
+          색만으로는 안 보일 수 있으니 문장으로도 한 번 짚어 둔다.
+          자세한 설명은 우상단 '?' — HelpBody */}
+      {ashLevel > 0 && (
+        <>
+          <p className="text-xs leading-relaxed break-keep text-ink-muted">
+            요 며칠, 몸을 좀 많이 태우셨습니다.
+          </p>
+          <HelpBody open={ashHelpOpen}>
+            재는 쉬지 않고 몰아붙인 자리에 앉는 낡음입니다. 최근 일주일
+            흐름이라 하루 쉰다고 바로 없어지지 않아요 — 생명력·여흥 쪽도
+            함께 채워보시길 권합니다.
+          </HelpBody>
+        </>
       )}
 
       {/* 첫 선택만 눈에 띄는 버튼. 이후에는 조용한 정보 링크로 바뀐다. */}

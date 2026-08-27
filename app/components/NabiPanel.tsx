@@ -12,6 +12,7 @@ import {
 import { NABI, NABI_DOZE, NABI_STRETCH } from '@/lib/sprite';
 import { NABI_LIMIT_LINES, NABI_LINES, pickLine } from './nabiLines';
 import { useEffect, useRef, useState } from 'react';
+import { decayBodyStyle, decayGrimeStripStyle, decayHeaderStyle } from './decayTint';
 import { Panel, PixelButton } from './Pixel';
 import { PixelSprite } from './PixelSprite';
 
@@ -26,6 +27,7 @@ export function NabiPanel({
   onClaim,
   onDress,
   onPet,
+  shadowLevel = 0,
 }: {
   affection: number;
   claimed: number[];
@@ -37,6 +39,11 @@ export function NabiPanel({
   onDress: (itemId: string) => void;
   /** 좁은 화면에는 배경 나비가 없다. 여기서 직접 쓰다듬는다 */
   onPet: () => boolean;
+  /**
+   * 녹은 개수로 세지 않는다(docs/LORE.md, decayTint.ts) — 나비를 감싼
+   * 이 패널 자체의 색이 흐려지는 것으로 보여준다. 재는 용사 쪽 패널(Character) 몫.
+   */
+  shadowLevel?: number;
 }) {
   const [bubble, setBubble] = useState<string | null>(null);
   const [pose, setPose] = useState<'sit' | 'doze' | 'stretch'>('doze');
@@ -70,7 +77,13 @@ export function NabiPanel({
 
 
   return (
-    <Panel title="나비">
+    <Panel
+      title="나비"
+      style={decayBodyStyle('shadow', shadowLevel)}
+      headerStyle={decayHeaderStyle('shadow', shadowLevel)}
+      grimeStyle={decayGrimeStripStyle('shadow', shadowLevel)}
+      help="녹은 벌이 아니라, 방치된 자리에 저절로 스며드는 낡음입니다. 나비가 다니는 배경에서도 이 창의 색으로도 나타나요 — 개수를 세지 않고, 색이 흐려지는 것으로만 보여줍니다. 오늘 하루를 살아내면 곧바로 옅어집니다."
+    >
       <div className="flex flex-col gap-4">
         {/* 나비의 자리.
             말풍선을 띄워서 옆을 가리는 대신 **자리를 가로로 길게 잡고**
@@ -103,6 +116,16 @@ export function NabiPanel({
             )}
           </span>
         </button>
+
+        {/* 넓은 화면은 배경을 거니는 나비 곁에 얼룩으로 보여준다(NabiCompanion).
+            좁은 화면엔 그 배경이 없으니, 개수를 세는 대신 패널 색 자체를
+            흐린다(decayTint, 위 <Panel>의 style·grimeStyle). 이 한 줄은
+            그걸 말로도 짚어 주는 것 — 자세한 설명은 타이틀바의 '?' */}
+        {shadowLevel > 0 && (
+          <p className="text-xs leading-relaxed break-keep text-ink-muted">
+            이 자리, 녹이 옅게 스며 있습니다.
+          </p>
+        )}
 
         <div className="flex items-end justify-between gap-3 border-2 border-ink bg-surface px-3 py-2.5">
           <div className="min-w-0">

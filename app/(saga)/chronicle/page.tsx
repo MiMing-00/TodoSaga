@@ -5,6 +5,8 @@ import { useSagaStore } from '@/lib/store';
 
 export default function ChroniclePage() {
   const days = useSagaStore((s) => s.days);
+  const lastSeenBookMonth = useSagaStore((s) => s.lastSeenBookMonth);
+  const markBookSeen = useSagaStore((s) => s.markBookSeen);
 
   return (
     <>
@@ -15,7 +17,11 @@ export default function ChroniclePage() {
         </p>
       </div>
 
-      <Chronicle days={days} />
+      <Chronicle
+        days={days}
+        lastSeenBookMonth={lastSeenBookMonth}
+        onSeenBook={markBookSeen}
+      />
     </>
   );
 }

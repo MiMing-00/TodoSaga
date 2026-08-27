@@ -12,14 +12,6 @@
   font-display: swap;
 }
 
-/* 로고 전용. 본문과 같은 글꼴을 키우기만 하면 '큰 글씨'일 뿐 로고가 안 된다 */
-@font-face {
-  font-family: "Galmuri14";
-  src: url("https://cdn.jsdelivr.net/npm/galmuri/dist/Galmuri14.woff2") format("woff2");
-  font-weight: 400;
-  font-display: swap;
-}
-
 /* ─────────────────────────────────────────────
    Design tokens — DESIGN.md 참조
    ───────────────────────────────────────────── */
@@ -60,8 +52,7 @@
 
   /* Type */
   --font-display: "Galmuri11", ui-monospace, monospace;
-  /* 로고 전용 — 영문 NABI SAGA. UI 픽셀(Galmuri)과 겹치지 않게 분리 */
-  --font-logo: var(--font-logo-pixel), "Galmuri14", "Galmuri11", ui-monospace, monospace;
+  /* 로고는 폰트가 아니라 픽셀 데이터다 — lib/logotype.ts 참조 */
   --font-body: "Pretendard", -apple-system, system-ui, sans-serif;
 
   /* Elevation — blur 0, spread 0. 픽셀에 흐림은 없다 */
@@ -83,6 +74,9 @@
   --animate-beam-up: beam-up 160ms steps(4, end) both;
   --animate-burst: burst 420ms steps(5, end) both;
   --animate-twinkle: twinkle 480ms steps(2, end) infinite;
+
+  /* 책장 — 한 권이 엮이는 순간. 페이지가 챠르륵 넘어간다 */
+  --animate-book-page: book-page 90ms steps(2, end);
 
   /* 강화 */
   --animate-enhance-shake: enhance-shake 140ms steps(2, end) infinite;
@@ -404,4 +398,17 @@ body {
 
 .quest-scroll-unfurl {
   animation: quest-scroll-unfurl 0.72s steps(6, end) forwards;
+}
+
+/* 책장 — 페이지 한 장이 넘어간다. 낱장마다 지연을 다르게 줘서 챠르륵 이어지게 한다 */
+@keyframes book-page {
+  0% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.12);
+  }
+  100% {
+    transform: scaleX(1);
+  }
 }

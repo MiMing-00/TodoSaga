@@ -1,45 +1,85 @@
+import {
+  PALETTE_PAPER,
+  PixelWordmark,
+  type Accent,
+} from '@/app/components/PixelWordmark';
+
 /**
  * 로고.
  *
- * UI 픽셀(Galmuri)과 같은 글꼴을 키우면 로고가 아니라 큰 칩 글씨가 된다.
- * Silkscreen Bold에 **여덟 방향 스트로크**를 얹어 획을 강제로 굵힌다.
- * (웹 폰트 weight만으로는 여기까지 안 굵어진다)
+ * 폰트를 키우면 로고가 아니라 '큰 글씨'다. 굵히려고 text-shadow를 여덟 방향으로
+ * 깔면 A·B·G의 속구멍이 메워져 덩어리가 된다 — 특히 상단바(16px)에서 글자가
+ * 통째로 뭉개졌다. 그래서 캐릭터와 같은 방식으로 바꿨다: **글자도 데이터다.**
+ * 획을 직접 그리고 외곽선·베벨·하드섀도는 코드가 계산한다(`lib/logotype.ts`).
  *
- * 앞쪽은 원래 TODO였다. 할 일 관리라는 건 알려 주지만 그건 아무 앱이나 하는 말이고,
- * 이 앱에서 실제로 사람을 붙잡는 건 **나비**다. 이름 앞자리는 그 자리에 준다.
+ * 색은 두 마디로 나눈다. NABI는 브랜드 액센트 Saga Violet, SAGA는 종이색을
+ * 잉크 외곽선으로 파낸 모양. 예전에는 SAGA에 `--color-str`(STR 카테고리 잉크)을
+ * 썼는데, 그건 데이터 전용 색이라 로고가 가져다 쓰면 안 된다.
  */
-const FAT = [
-  '-1px 0 0 currentColor',
-  '1px 0 0 currentColor',
-  '0 -1px 0 currentColor',
-  '0 1px 0 currentColor',
-  '-1px -1px 0 currentColor',
-  '1px -1px 0 currentColor',
-  '-1px 1px 0 currentColor',
-  '1px 1px 0 currentColor',
-  '-2px 0 0 currentColor',
-  '2px 0 0 currentColor',
-  '0 -2px 0 currentColor',
-  '0 2px 0 currentColor',
-].join(', ');
+const ACCENT: Accent = { chars: 4, fill: '#5A3FD6', lit: '#9B86F0' };
+
+/**
+ * 크기마다 획 굵기가 다르다 — 작은 데서 획을 2칸으로 두면 속구멍이 1칸만 남아 막힌다.
+ *
+ * 자간은 **외곽선 두 개가 들어가고도 한 칸이 남아야** 한다. 획 1칸이면 자간 3,
+ * 획 2칸이면 (자간도 같이 두 배가 되므로) 자간 3이면 충분하다. 자간을 아끼면
+ * 옆 글자 외곽선끼리 붙어서 단어가 한 덩어리가 된다.
+ */
+const SIZES = {
+  sm: { px: 2, weight: 1, tracking: 3, drop: [1, 1] },
+  md: { px: 2, weight: 2, tracking: 3, drop: [2, 2] },
+  lg: { px: 3, weight: 2, tracking: 3, drop: [2, 2] },
+} as const;
 
 export function Wordmark({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const scale = {
-    sm: 'text-[16px]',
-    md: 'text-[22px]',
-    lg: 'text-[30px] sm:text-[38px]',
-  }[size];
+  const s = SIZES[size];
 
   return (
-    <span
-      className={`font-logo font-bold leading-none ${scale}`}
-      aria-label="NabiSaga"
-    >
-      <span className="text-primary" style={{ textShadow: FAT }}>
-        NABI
-      </span>
-      <span className="text-str" style={{ textShadow: FAT }}>
-        SAGA
+    <PixelWordmark
+      text="NABISAGA"
+      px={s.px}
+      weight={s.weight}
+      tracking={s.tracking}
+      drop={[s.drop[0], s.drop[1]]}
+      palette={PALETTE_PAPER}
+      accent={ACCENT}
+      title="NabiSaga"
+    />
+  );
+}
+
+/**
+ * 로그인 히어로용 2단 엠블럼.
+ *
+ * 한 줄짜리 워드마크는 가로로 길어서 화면 한가운데 놓으면 그냥 머리글이 된다.
+ * NABI를 크게 쌓고 SAGA를 벌려서 아래에 두면 **타이틀 화면**이 된다 —
+ * 로그인은 앱에서 유일하게 그렇게 굴어도 되는 화면이다.
+ */
+export function WordmarkEmblem() {
+  return (
+    <span className="flex flex-col items-center gap-2" aria-label="NabiSaga">
+      <PixelWordmark
+        text="NABI"
+        px={5}
+        weight={2}
+        tracking={3}
+        drop={[2, 2]}
+        accent={ACCENT}
+        palette={PALETTE_PAPER}
+        title="Nabi"
+      />
+      <span className="flex items-center gap-2">
+        <span className="h-[3px] w-7 bg-ink" aria-hidden />
+        <PixelWordmark
+          text="SAGA"
+          px={3}
+          weight={1}
+          tracking={4}
+          drop={[1, 1]}
+          palette={PALETTE_PAPER}
+          title="Saga"
+        />
+        <span className="h-[3px] w-7 bg-ink" aria-hidden />
       </span>
     </span>
   );

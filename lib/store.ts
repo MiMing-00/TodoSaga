@@ -121,8 +121,16 @@ interface SagaState {
   lastDrop: string | null;
   /** 마지막으로 퀘스트를 1개 이상 완료한 날 */
   lastClearedDate: string | null;
+  /**
+   * 사가의 서 「책장」에서 마지막으로 확인한 달(YYYY-MM).
+   * 이 값보다 지금 달이 앞서 있으면, 그 사이에 최소 한 권이 새로 엮였다는
+   * 뜻이라 "챠르륵" 연출을 한 번 보여준다. 본 뒤 이 값을 오늘 달로 올린다.
+   */
+  lastSeenBookMonth: string | null;
 
   markHydrated: () => void;
+  /** 책장 연출을 봤다고 표시한다 */
+  markBookSeen: (monthKey: string) => void;
   setJob: (job: string) => void;
   /** 전직. 첫 선택은 무료, 이후에는 골드가 모자라면 아무 일도 일어나지 않는다. */
   changeClass: (charClass: Category) => void;
@@ -182,6 +190,7 @@ export const useSagaStore = create<SagaState>()(
       streak: 0,
       bestStreak: 0,
       lastClearedDate: null,
+      lastSeenBookMonth: null,
       inventory: [],
       equipped: {},
       materials: { ...EMPTY_MATERIALS },
@@ -200,6 +209,8 @@ export const useSagaStore = create<SagaState>()(
       toast: null,
 
       markHydrated: () => set({ hydrated: true }),
+
+      markBookSeen: (monthKey) => set({ lastSeenBookMonth: monthKey }),
 
       setJob: (job) => set({ job }),
 
@@ -735,6 +746,7 @@ export const useSagaStore = create<SagaState>()(
         streak: s.streak,
         bestStreak: s.bestStreak,
         lastClearedDate: s.lastClearedDate,
+        lastSeenBookMonth: s.lastSeenBookMonth,
         inventory: s.inventory,
         equipped: s.equipped,
         materials: s.materials,

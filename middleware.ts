@@ -23,6 +23,9 @@ export function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|icon.png).*)'],
+  // 파비콘·OG 이미지는 로그인 없이도 나가야 한다 — 공유 카드를 가져가는 건 크롤러다
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico|icon|opengraph-image).*)',
+  ],
 };
 

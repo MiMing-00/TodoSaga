@@ -1,3 +1,4 @@
+import { daysBetween, lastNDays } from './date';
 import type { Quest } from './quest';
 
 /**
@@ -90,6 +91,64 @@ export function activeDebuffPercent(
 ): number {
   if (!debuff || debuff.date !== today) return 0;
   return debuff.percent;
+}
+
+/**
+ * 그림자 세기 (0~4).
+ *
+ * docs/LORE.md "녹이란 무엇인가" — 그림자는 용사가 만드는 게 아니라
+ * 방치된 자리에 저절로 스며드는 낡음이다. 그러니 숫자로 쌓아두지 않는다 —
+ * "마지막으로 하루를 살아낸 날(lastClearedDate)로부터 며칠이 지났는가"로
+ * 그때그때 어림한다. 오늘 하나라도 완수하면 그 즉시 0으로 밀려난다.
+ */
+export function shadowLevelFor(
+  lastClearedDate: string | null,
+  today: string,
+): number {
+  if (!lastClearedDate) return 0; // 아직 첫 장도 안 열렸다 — 방치가 아니라 백지다
+  const gap = daysBetween(lastClearedDate, today);
+  if (gap <= 0) return 0;
+  if (gap === 1) return 1;
+  if (gap <= 3) return 2;
+  if (gap <= 6) return 3;
+  return 4;
+}
+
+/** 재를 판단하는 창(일). 하루 이틀 몰아붙였다고 앉지 않는다 */
+const ASH_WINDOW_DAYS = 7;
+/** 이 정도는 실제로 밀어붙였어야 재를 논할 수 있다 — 며칠 쉬었다고 재가 앉지는 않는다 */
+const ASH_MIN_COMPLETED = 10;
+
+/**
+ * 재 세기 (0~4).
+ *
+ * docs/LORE.md "재 — 무리해서 태운 불씨" — 완력·지혜·인망만 몰아붙이며
+ * 생명력·여흥(건강과 쉼)을 계속 방치하면 그 자리에 재가 앉는다.
+ * 최근 7일 동안 완수한 퀘스트 중 생명력·여흥 비중이 얼마나 작은가로 어림한다.
+ *
+ * 그림자와 마찬가지로 새 필드를 저장하지 않는다 — 이미 있는 `days` 기록만으로
+ * 매번 다시 잰다. 임계값은 첫 시도값이라 손봐야 할 수 있다.
+ */
+export function ashLevelFor(
+  days: Record<string, Quest[]>,
+  today: string,
+): number {
+  let rest = 0;
+  let total = 0;
+  for (const date of lastNDays(ASH_WINDOW_DAYS, today)) {
+    for (const q of days[date] ?? []) {
+      if (!q.completed) continue;
+      total += 1;
+      if (q.category === 'VIT' || q.category === 'LUK') rest += 1;
+    }
+  }
+  if (total < ASH_MIN_COMPLETED) return 0; // 몰아붙일 만큼 하지도 않았다 — 그건 그림자의 몫
+  const restRatio = rest / total;
+  if (restRatio >= 0.3) return 0;
+  if (restRatio >= 0.2) return 1;
+  if (restRatio >= 0.12) return 2;
+  if (restRatio >= 0.05) return 3;
+  return 4;
 }
 
 // ─────────────────────────────────────────────

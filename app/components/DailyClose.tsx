@@ -24,7 +24,9 @@ export function DailyClose({
   const allDone = summary.missed.length === 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
+    /* 바깥은 절대 스크롤하지 않는다. 여기가 스크롤되면 오버레이(absolute inset-0)가
+       첫 화면 높이만 덮고 나머지는 맨 페이지가 드러난다 — 의뢰가 많은 날 그랬다 */
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0"
         style={{
@@ -39,15 +41,16 @@ export function DailyClose({
         role="dialog"
         aria-modal="true"
         aria-label="하루 마감"
-        className="relative my-auto w-full max-w-md border-[3px] border-ink bg-surface shadow-pixel"
+        /* 놓친 의뢰가 몇 건이든 창 높이는 그대로. 넘치는 만큼은 안에서 스크롤한다 */
+        className="relative flex max-h-[min(36rem,calc(100dvh-2rem))] w-full max-w-md flex-col border-[3px] border-ink bg-surface shadow-pixel"
       >
-        <header className="border-b-[3px] border-ink bg-ink px-3 py-2">
+        <header className="shrink-0 border-b-[3px] border-ink bg-ink px-3 py-2">
           <p className="font-display text-[13px] text-canvas">
             ▸ 오늘의 장이 닫힙니다
           </p>
         </header>
 
-        <div className="flex flex-col gap-4 p-4 sm:p-5">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
           <p className="font-display text-[11px] text-ink-muted">
             {formatKorean(summary.date)}
           </p>
@@ -119,7 +122,7 @@ export function DailyClose({
 
               {summary.debuffPercent > 0 && (
                 <p className="mt-2.5 border-2 border-danger bg-surface px-2.5 py-2 font-display text-[11px] leading-relaxed break-keep text-danger">
-                  놓친 의뢰가 그림자로 남아, 내일 하루 EXP가{' '}
+                  놓친 의뢰가 녹으로 남아, 내일 하루 EXP가{' '}
                   {summary.debuffPercent}% 줄어듭니다.
                   <span className="mt-1 block text-ink-muted">
                     불씨는 꺼지지 않았어요.
@@ -128,7 +131,9 @@ export function DailyClose({
               )}
             </div>
           )}
+        </div>
 
+        <div className="shrink-0 border-t-[3px] border-ink p-4 sm:p-5">
           <PixelButton onClick={onClose} className="w-full py-3 text-sm">
             다음 장으로
           </PixelButton>
