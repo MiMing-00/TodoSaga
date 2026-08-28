@@ -16,9 +16,12 @@ import { PixelButton, SegmentGauge } from './Pixel';
  */
 export function DailyClose({
   summary,
+  restCharmWillApply,
   onClose,
 }: {
   summary: DaySummary;
+  /** 「쉬어가기 부적」이 있어 이 하루로는 연속 기록이 끊기지 않는다 */
+  restCharmWillApply?: boolean;
   onClose: () => void;
 }) {
   const allDone = summary.missed.length === 0;
@@ -126,6 +129,15 @@ export function DailyClose({
                   {summary.debuffPercent}% 줄어듭니다.
                   <span className="mt-1 block text-ink-muted">
                     불씨는 꺼지지 않았어요.
+                  </span>
+                </p>
+              )}
+
+              {restCharmWillApply && (
+                <p className="mt-2.5 border-2 border-ink bg-tint-lavender px-2.5 py-2 font-display text-[11px] leading-relaxed break-keep text-ink">
+                  「쉬어가기 부적」이 이 하루를 대신 넘겨줍니다.
+                  <span className="mt-1 block text-ink-muted">
+                    부적 1개를 쓰고, 연속 기록은 끊기지 않아요.
                   </span>
                 </p>
               )}

@@ -1,4 +1,5 @@
 import { daysBetween, lastNDays } from './date';
+import type { OwnedItem } from './inventory';
 import type { Quest } from './quest';
 
 /**
@@ -28,6 +29,24 @@ export interface DaySummary {
 
 export function debuffPercentFor(missedCount: number): number {
   return Math.min(missedCount * DEBUFF_PER_MISS, DEBUFF_MAX);
+}
+
+// ─────────────────────────────────────────────
+// 「쉬어가기 부적」— t_rest_charm
+//
+// "하루를 놓쳐도 연속 기록이 끊기지 않는다"는 상점 설명이 실제로는
+// 아무 코드와도 연결돼 있지 않았다. 여기서 그 판정을 실제로 만든다.
+// ─────────────────────────────────────────────
+
+export const REST_CHARM_ID = 't_rest_charm';
+
+/** 그날 하나라도 완수했으면 연속 기록은 애초에 안 끊긴다 — 부적이 지켜줄 대상이 아니다 */
+export function fullyMissed(quests: Quest[]): boolean {
+  return quests.length > 0 && quests.every((q) => !q.completed);
+}
+
+export function hasRestCharm(inventory: OwnedItem[]): boolean {
+  return inventory.some((o) => o.itemId === REST_CHARM_ID && o.count > 0);
 }
 
 export function summarize(date: string, quests: Quest[]): DaySummary {

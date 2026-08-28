@@ -190,7 +190,6 @@ const NABI_ITEMS: Item[] = [
   { id: 'n_fur_snow', name: '눈송이 털', axis: 'nabi', slot: 'fur', rank: 'A', classLock: null, gachaOnly: true, desc: '흰 눈 같은 털.' },
   { id: 'n_fur_calico', name: '삼색 털', axis: 'nabi', slot: 'fur', rank: 'A', classLock: null, gachaOnly: true, desc: '세 가지 색이 섞였다.' },
   { id: 'n_fur_shadow', name: '그림자 털', axis: 'nabi', slot: 'fur', rank: 'S', classLock: null, gachaOnly: true, desc: '어두운 곳에서는 잘 보이지 않는다.' },
-  { id: 'n_fur_gold', streakOnly: true, name: '금빛 털', axis: 'nabi', slot: 'fur', rank: 'S', classLock: null, desc: '백 일을 함께 걸은 사이에게만.' },
   { id: 'n_fur_gold', streakOnly: true, name: '금빛 털', axis: 'nabi', slot: 'fur', rank: 'S', classLock: null, desc: '오래 곁에 둔 사이에게만 보이는 빛.' },
   { id: 'n_acc_scarf', name: '나비의 목도리', axis: 'nabi', slot: 'collar', rank: 'B', classLock: null, gachaOnly: true, desc: '목이 따뜻하면 잘 잔다.' },
   { id: 'n_acc_ribbon', name: '나비의 리본', axis: 'nabi', slot: 'collar', rank: 'A', classLock: null, gachaOnly: true, desc: '싫어하는 눈치지만 잘 어울린다.' },

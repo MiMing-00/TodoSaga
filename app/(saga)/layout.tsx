@@ -9,6 +9,8 @@ import { equippedCosmetics } from '@/lib/inventory';
 import { activeStreak, useSagaStore } from '@/lib/store';
 import {
   ashLevelFor,
+  fullyMissed,
+  hasRestCharm,
   pendingCloseDate,
   shadowLevelFor,
   summarize,
@@ -147,6 +149,9 @@ export default function SagaLayout({
       {closeTarget && (
         <DailyClose
           summary={summarize(closeTarget, days[closeTarget] ?? [])}
+          restCharmWillApply={
+            fullyMissed(days[closeTarget] ?? []) && hasRestCharm(inventory)
+          }
           onClose={() => closeDay(closeTarget, today)}
         />
       )}

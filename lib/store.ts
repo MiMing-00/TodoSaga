@@ -17,6 +17,9 @@ import {
   activeDebuffPercent,
   datesToClose,
   debuffPercentFor,
+  fullyMissed,
+  hasRestCharm,
+  REST_CHARM_ID,
   type ActiveDebuff,
 } from './daily';
 import {
@@ -561,9 +564,28 @@ export const useSagaStore = create<SagaState>()(
           // 일주일을 비웠다고 정산 화면을 일곱 번 띄울 수는 없다
           const toClose = datesToClose(s.days, s.closedDays, date);
 
+          // 「쉬어가기 부적」— 그날 하나도 완수하지 못했으면 연속 기록이 끊기는데,
+          // 부적을 갖고 있으면 1개를 써서 그 하루를 넘겨준다. EXP 디버프는 그대로 받는다 —
+          // 부적이 지켜주는 건 연속 기록뿐이다
+          let inventory = s.inventory;
+          let lastClearedDate = s.lastClearedDate;
+          if (fullyMissed(quests) && hasRestCharm(s.inventory)) {
+            const charm = s.inventory.find((o) => o.itemId === REST_CHARM_ID)!;
+            inventory =
+              charm.count > 1
+                ? s.inventory.map((o) =>
+                    o.uid === charm.uid ? { ...o, count: o.count - 1 } : o,
+                  )
+                : s.inventory.filter((o) => o.uid !== charm.uid);
+            // 그날을 이어낸 것으로 쳐서 사슬을 끊지 않는다 — streak 수치 자체는 올리지 않는다
+            lastClearedDate = date;
+          }
+
           return {
             closedDays: [...s.closedDays, ...toClose],
             debuff: percent > 0 ? { date: nextDate, percent } : null,
+            inventory,
+            lastClearedDate,
           };
         }),
 
@@ -765,6 +787,17 @@ export const useSagaStore = create<SagaState>()(
     },
   ),
 );
+
+// 탭을 두 개 이상 열어두면 나중에 저장되는 탭이 먼저 탭의 변경을 조용히 덮어썼다 —
+// zustand persist는 기본적으로 storage 이벤트를 구독하지 않는다.
+// 다른 탭이 저장한 걸 감지하면 이 탭도 다시 읽어와 맞춘다.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'todosaga') {
+      void useSagaStore.persist.rehydrate();
+    }
+  });
+}
 
 function equipContext(s: {
   charClass: Category | 'NONE';
