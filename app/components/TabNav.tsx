@@ -87,8 +87,6 @@ export function TabNav({
     );
   }
 
-  const bottom = [...TABS, SETTINGS];
-
   return (
     <div
       className="relative z-30 shrink-0 border-t-[3px] border-ink bg-canvas sm:hidden"
@@ -98,7 +96,7 @@ export function TabNav({
 
       <nav>
         <ul className="flex">
-          {bottom.map((tab) => {
+          {TABS.map((tab) => {
             const active = pathname === tab.href;
             return (
               <li key={tab.href} className="flex-1">
@@ -117,6 +115,25 @@ export function TabNav({
               </li>
             );
           })}
+
+          {/* 자주 쓰지 않는다 — 사이드바처럼 본 탭과 섞지 않고
+              구분선 너머 좁은 칸으로 따로 뗀다 */}
+          <li className="shrink-0 border-l-2 border-ink-disabled">
+            <Link
+              href={SETTINGS.href}
+              aria-current={pathname === SETTINGS.href ? 'page' : undefined}
+              className={`flex h-full w-12 flex-col items-center justify-center gap-0.5 py-2.5 font-display text-[10px] ${
+                pathname === SETTINGS.href
+                  ? 'bg-ink text-canvas'
+                  : 'bg-canvas text-ink-muted'
+              }`}
+            >
+              <span aria-hidden className="text-base leading-none">
+                {SETTINGS.glyph}
+              </span>
+              {SETTINGS.label}
+            </Link>
+          </li>
         </ul>
       </nav>
     </div>
