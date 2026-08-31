@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3100";
 const TAGLINE = "말하는 고양이를 집사로 들였더니 미루던 일이 전부 의뢰서가 되었다";
 
 /**
@@ -14,7 +14,7 @@ const TAGLINE = "말하는 고양이를 집사로 들였더니 미루던 일이 
 const DEV = process.env.NODE_ENV === "development";
 
 export const metadata: Metadata = DEV
-  ? { title: "localhost:3001 — next dev", description: "development server" }
+  ? { title: "localhost:3100 — next dev", description: "development server" }
   : {
       // 없으면 OG 이미지 주소가 localhost:3000으로 굳어서 공유 카드가 안 뜬다
       metadataBase: new URL(SITE_URL),

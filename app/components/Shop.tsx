@@ -118,7 +118,14 @@ export function Shop({
           </p>
         )}
 
-        <ul className="flex flex-col gap-2">
+        {/* 품목이 쌓이면 이 목록 하나가 페이지 길이를 다 끌고 간다 —
+            적당한 높이에서 잘라 안쪽에서만 스크롤한다.
+            pt-3: 맨 위 항목이 "오늘의 매물" 배지를 달고 있으면 그 배지가
+            li 위로 10px 튀어나오는데, 여백이 없으면 스크롤 시 잘려 보인다.
+            Panel의 padding(p-4 sm:p-5)은 그대로 두고, -mr/pr을 그 절반만큼만
+            맞바꿔서 스크롤바가 테두리와 콘텐츠 사이 여백 한가운데 놓이게
+            한다. 트랙 배경은 이 목록에서만 지워 막대만 떠 보이게 한다 */}
+        <ul className="-mr-[8px] flex max-h-[26rem] flex-col gap-2 overflow-y-auto overscroll-contain pt-3 pr-[8px] sm:-mr-[10px] sm:pr-[10px] [&::-webkit-scrollbar-track]:bg-transparent">
           {entries.map(({ item, price, wasPrice, owned }) => {
             const rank = RANK[item.rank] ?? RANK.F;
             const affordable = gold >= price;

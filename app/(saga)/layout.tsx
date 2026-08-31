@@ -25,7 +25,7 @@ import { useEffect } from 'react';
  * 좌우로 갈라 쓰는(레일 · 비대칭 분할) 페이지는 컨테이너를 더 넓게 연다.
  * 설정만 예외로 좁게 둔다 — 짧은 폼 하나뿐이라 넓힐 이유가 없다.
  */
-const SPLIT_ROUTES = ['/', '/character', '/bag', '/shop'];
+const SPLIT_ROUTES = ['/', '/character', '/bag', '/shop', '/chronicle'];
 
 /**
  * 사가 화면 공통 껍데기.

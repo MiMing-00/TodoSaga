@@ -18,14 +18,10 @@ export default function ShopPage() {
     <>
       <h1 className="font-display text-lg text-ink sm:text-xl">▸ 상점</h1>
 
-      {/* xl 미만은 그대로 한 줄로 쌓인다(상자가 위, 상점이 아래).
-          xl 이상만 상자가 오른쪽 레일로 넘어간다 —
-          row-reverse라 DOM 순서(Gacha 먼저)는 그대로 두고 자리만 바꾼다 */}
-      <div className="flex flex-col gap-6 xl:flex-row-reverse xl:items-start xl:gap-8">
-        <div className="xl:w-[320px] xl:shrink-0">
-          <Gacha gold={gold} pity={gachaPity} onPull={pullGacha} />
-        </div>
-
+      {/* 상점(사서 얻는다)이 이 페이지의 본론, 상자(뽑아서 얻는다)는
+          곁다리다. 좁은 화면에서 위아래로 쌓일 때도 본론이 먼저 보이도록
+          DOM 순서 자체를 상점 먼저로 둔다 — xl에서도 그대로 왼쪽이 상점 */}
+      <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
         <div className="min-w-0 flex-1">
           <Shop
             gold={gold}
@@ -40,6 +36,10 @@ export default function ShopPage() {
               return err;
             }}
           />
+        </div>
+
+        <div className="xl:w-[320px] xl:shrink-0">
+          <Gacha gold={gold} pity={gachaPity} onPull={pullGacha} />
         </div>
       </div>
     </>

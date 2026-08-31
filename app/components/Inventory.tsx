@@ -97,25 +97,34 @@ export function Inventory({
             아직 비어 있어요. 의뢰를 완수하면 하나씩 쌓입니다.
           </p>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {list.map((owned) => (
-              <ItemRow
-                key={owned.uid}
-                owned={owned}
-                worn={worn.has(owned.uid)}
-                ctx={ctx}
-                onEquip={() => {
-                  const err = onEquip(owned.uid);
-                  setNotice(err);
-                }}
-                onUnequip={() => {
-                  onUnequip(owned.uid);
-                  setNotice(null);
-                }}
-                onSell={() => setNotice(onSell(owned.uid))}
-              />
-            ))}
-          </ul>
+          /* 넓은 화면에서 한 줄로 쭉 늘어놓으면 오른쪽이 통째로 빈다.
+             xl부터 두 칸으로 접어 그 폭을 채운다.
+             쌓이다 보면 이 목록 하나 때문에 페이지 전체가 길어진다 —
+             적당한 높이에서 잘라 안쪽에서만 스크롤한다.
+             Panel의 padding(p-4 sm:p-5)은 그대로 두고, -mr/pr을 그 절반만큼만
+             맞바꿔서 스크롤바가 테두리와 콘텐츠 사이 여백 한가운데 놓이게
+             한다. 트랙 배경은 이 목록에서만 지워 막대만 떠 보이게 한다 */
+          <div className="-mr-[8px] max-h-[26rem] overflow-y-auto overscroll-contain pr-[8px] sm:-mr-[10px] sm:pr-[10px] [&::-webkit-scrollbar-track]:bg-transparent">
+            <ul className="grid grid-cols-1 gap-2 xl:grid-cols-2">
+              {list.map((owned) => (
+                <ItemRow
+                  key={owned.uid}
+                  owned={owned}
+                  worn={worn.has(owned.uid)}
+                  ctx={ctx}
+                  onEquip={() => {
+                    const err = onEquip(owned.uid);
+                    setNotice(err);
+                  }}
+                  onUnequip={() => {
+                    onUnequip(owned.uid);
+                    setNotice(null);
+                  }}
+                  onSell={() => setNotice(onSell(owned.uid))}
+                />
+              ))}
+            </ul>
+          </div>
         )}
       </div>
     </Panel>
@@ -145,7 +154,7 @@ function SlotRow({
   const tools = equipped.tools ?? [];
 
   return (
-    <ul className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+    <ul className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 xl:grid-cols-8">
       {ALL_EQUIP_SLOTS.map((slot) => {
         const uid = equipped[slot];
         const name = nameOf(uid);

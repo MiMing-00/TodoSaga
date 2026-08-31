@@ -2,7 +2,6 @@
 
 import { Character } from '@/app/components/Character';
 import { NabiPanel } from '@/app/components/NabiPanel';
-import { StatPanel } from '@/app/components/StatPanel';
 import { StreakStrip } from '@/app/components/StreakStrip';
 import { equippedCosmetics } from '@/lib/inventory';
 import { ashLevelFor, shadowLevelFor } from '@/lib/daily';
@@ -43,20 +42,23 @@ export default function CharacterPage() {
     <>
       <h1 className="font-display text-lg text-ink sm:text-xl">▸ 캐릭터</h1>
 
-      {/* xl 미만은 그대로 한 줄로 쌓인다. xl 이상만 오른쪽 레일로 갈라진다 */}
-      <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
-        <div className="flex min-w-0 flex-1 flex-col gap-6">
-          <Character
-            stats={stats}
-            level={levelFromExp(exp)}
-            gold={gold}
-            charClass={charClass}
-            classChanges={classChanges}
-            cosmetics={equippedCosmetics(inventory, equipped)}
-            onChangeClass={changeClass}
-            ashLevel={ashLevel}
-          />
+      {/* 용사 카드가 주인공이다. 자질까지 카드 안에 담았으니 혼자서도
+          할 말이 많다 — 옆에 나란히 세워 몸집을 반으로 줄일 이유가 없다 */}
+      <Character
+        stats={stats}
+        level={levelFromExp(exp)}
+        gold={gold}
+        charClass={charClass}
+        classChanges={classChanges}
+        cosmetics={equippedCosmetics(inventory, equipped)}
+        onChangeClass={changeClass}
+        ashLevel={ashLevel}
+      />
 
+      {/* xl 미만은 그대로 쌓인다. xl 이상만 갈라진다 —
+          매일 챙기는 불씨가 주, 나비와의 교감은 곁다리라 오른쪽 레일로 보낸다 */}
+      <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
+        <div className="min-w-0 flex-1">
           <StreakStrip
             streak={activeStreak(streak, lastClearedDate)}
             bestStreak={bestStreak}
@@ -69,7 +71,7 @@ export default function CharacterPage() {
           />
         </div>
 
-        <div className="flex flex-col gap-6 xl:w-[320px] xl:shrink-0">
+        <div className="xl:w-[320px] xl:shrink-0">
           <NabiPanel
             affection={affection}
             claimed={claimedAffection}
@@ -85,8 +87,6 @@ export default function CharacterPage() {
             onPet={() => petNabi(today)}
             shadowLevel={shadowLevel}
           />
-
-          <StatPanel stats={stats} />
         </div>
       </div>
     </>

@@ -51,6 +51,7 @@ export function Chronicle({
     CATEGORY_ORDER[0],
   );
   const hasRecord = view.totalDone > 0;
+  const statMax = Math.max(1, ...CATEGORY_ORDER.map((c) => view.stats[c]));
 
   // 책장 — docs/LORE.md "권(卷) — 사가의 매듭"
   const slots = listBookMonths(days, today);
@@ -92,7 +93,10 @@ export function Chronicle({
   }, []);
 
   return (
-    <div className="flex flex-col gap-6">
+    /* 달력이 본론이라 넓게, 자질별 분포·하루 기록은 곁에 세운다.
+       잔디를 아직 안 눌렀어도 그 자리를 비워두지 않는다 —
+       이 달의 분포를 기본값으로 채우고, 눌렀을 때만 그 날의 기록으로 바뀐다 */
+    <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
       {boundOverlay && (
         <BookBindOverlay
           volume={boundOverlay.volume}
@@ -104,170 +108,238 @@ export function Chronicle({
         />
       )}
 
-      <Panel
-        title="사가의 서"
-        right={
-          <span className="font-display text-[10px] text-canvas/70">
-            {year}년 {month}월
-          </span>
-        }
-      >
-        <div className="flex flex-col gap-4">
-          {/* 책장 — 캘린더와 한 몸이다. 지나간 달을 책으로 세워 두고,
-              그 책등을 눌러 아래 달력을 그 달로 넘긴다 */}
-          <Bookshelf
-            slots={slots}
-            onPick={(y, m) => {
-              setMonth({ year: y, month: m });
-              setPicked(null);
-            }}
-          />
-
-          <div className="border-t-2 border-dashed border-ink-disabled" />
-
-          {/* 달 이동 */}
-          <div className="flex items-center justify-between gap-2">
-            <PixelButton
-              variant="ghost"
-              onClick={() => {
-                setMonth(shiftMonth(year, month, -1));
-                setPicked(null);
-              }}
-              className="px-3 py-1.5 text-[11px] shadow-pixel-sm"
-            >
-              ◀ 이전 장
-            </PixelButton>
-
-            <span className="font-display text-sm text-ink">
+      <div className="min-w-0 flex-1">
+        <Panel
+          title="사가의 서"
+          right={
+            <span className="font-display text-[10px] text-canvas/70">
               {year}년 {month}월
             </span>
-
-            <PixelButton
-              variant="ghost"
-              onClick={() => {
-                setMonth(shiftMonth(year, month, 1));
+          }
+        >
+          <div className="flex flex-col gap-4">
+            {/* 책장 — 캘린더와 한 몸이다. 지나간 달을 책으로 세워 두고,
+                그 책등을 눌러 아래 달력을 그 달로 넘긴다 */}
+            <Bookshelf
+              slots={slots}
+              onPick={(y, m) => {
+                setMonth({ year: y, month: m });
                 setPicked(null);
               }}
-              className="px-3 py-1.5 text-[11px] shadow-pixel-sm"
-            >
-              다음 장 ▶
-            </PixelButton>
+            />
+
+            <div className="border-t-2 border-dashed border-ink-disabled" />
+
+            {/* 달 이동 */}
+            <div className="flex items-center justify-between gap-2">
+              <PixelButton
+                variant="ghost"
+                onClick={() => {
+                  setMonth(shiftMonth(year, month, -1));
+                  setPicked(null);
+                }}
+                className="px-3 py-1.5 text-[11px] shadow-pixel-sm"
+              >
+                ◀ 이전 장
+              </PixelButton>
+
+              <span className="font-display text-sm text-ink">
+                {year}년 {month}월
+              </span>
+
+              <PixelButton
+                variant="ghost"
+                onClick={() => {
+                  setMonth(shiftMonth(year, month, 1));
+                  setPicked(null);
+                }}
+                className="px-3 py-1.5 text-[11px] shadow-pixel-sm"
+              >
+                다음 장 ▶
+              </PixelButton>
+            </div>
+
+            {/* 잔디 */}
+            <div>
+              <ul className="mb-1 grid grid-cols-7 gap-1">
+                {WEEKDAY.map((w) => (
+                  <li
+                    key={w}
+                    className="text-center font-display text-[9px] text-ink-disabled"
+                  >
+                    {w}
+                  </li>
+                ))}
+              </ul>
+
+              <ul className="grid grid-cols-7 gap-1">
+                {view.cells.map((cell) => {
+                  if (cell.filler) {
+                    return <li key={cell.date} className="aspect-square" />;
+                  }
+
+                  const level = density(cell.done);
+                  const isToday = cell.date === today;
+                  const isPicked = cell.date === picked;
+                  const day = Number(cell.date.slice(-2));
+
+                  return (
+                    <li key={cell.date}>
+                      <button
+                        type="button"
+                        disabled={cell.total === 0}
+                        onClick={() => setPicked(isPicked ? null : cell.date)}
+                        aria-label={`${day}일 ${cell.done}/${cell.total} 완수${
+                          cell.categories.length > 0
+                            ? ` · ${cell.categories.map((c) => CATEGORY[c].name).join(', ')}`
+                            : ''
+                        }`}
+                        className={`press flex aspect-square w-full flex-col justify-between border-2 p-1 text-left font-display text-[10px] ${
+                          isPicked || isToday ? 'border-ink' : 'border-ink-disabled'
+                        } ${
+                          level === 0
+                            ? cell.future
+                              ? 'bg-transparent text-ink-disabled'
+                              : 'bg-sunken text-ink-disabled'
+                            : DENSITY[level]
+                        }`}
+                      >
+                        {/* 날짜는 좌상단에 붙여 둔다 — 칸 가운데를 비워야
+                            아래에 '무엇을 했는지'를 적을 자리가 생긴다 */}
+                        <span className="leading-none tabular-nums opacity-70">
+                          {day}
+                        </span>
+
+                        {/* 아래 줄이 그날의 요약이다. 숫자보다 아이콘이 빨리 읽힌다 */}
+                        <span className="flex flex-wrap items-end gap-0.5 leading-none">
+                          {cell.categories.map((c) => (
+                            <span
+                              key={c}
+                              aria-hidden
+                              className={`text-[11px] leading-none ${
+                                level >= 2 ? 'text-white' : 'text-ink'
+                              }`}
+                              title={CATEGORY[c].name}
+                            >
+                              {CATEGORY[c].icon}
+                            </span>
+                          ))}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* 이달의 요약 */}
+            {hasRecord ? (
+              <div className="border-2 border-ink bg-sunken px-3 py-2.5">
+                <p className="mb-2 font-display text-[11px] text-ink-muted">
+                  {viewedSlot?.status === 'bound'
+                    ? `제${viewedSlot.volume}권 「${viewedSlot.title}」`
+                    : '이 장의 기록'}
+                </p>
+                <div className="flex flex-wrap gap-2 font-display text-[12px]">
+                  <span className="text-ink tabular-nums">
+                    {view.activeDays}일 걸음
+                  </span>
+                  <span className="text-ink tabular-nums">
+                    의뢰 {view.totalDone}건
+                  </span>
+                  <span className="text-ink tabular-nums">
+                    +{view.totalExp.toLocaleString()} EXP
+                  </span>
+                  <span className="text-ink tabular-nums">
+                    +{view.totalGold.toLocaleString()} G
+                  </span>
+                </div>
+                <p className="mt-2 text-xs leading-relaxed break-keep text-ink-muted">
+                  이 달의 발길은{' '}
+                  <span className="text-ink">「{CATEGORY[topStat].name}」</span>
+                  에 가장 오래 머물렀습니다.
+                </p>
+              </div>
+            ) : (
+              <p className="border-2 border-dashed border-ink-disabled px-4 py-8 text-center text-xs break-keep text-ink-muted">
+                이 장에는 아직 아무것도 적히지 않았어요.
+              </p>
+            )}
           </div>
+        </Panel>
+      </div>
 
-          {/* 잔디 */}
-          <div>
-            <ul className="mb-1 grid grid-cols-7 gap-1">
-              {WEEKDAY.map((w) => (
-                <li
-                  key={w}
-                  className="text-center font-display text-[9px] text-ink-disabled"
-                >
-                  {w}
-                </li>
-              ))}
-            </ul>
-
-            <ul className="grid grid-cols-7 gap-1">
-              {view.cells.map((cell) => {
-                if (cell.filler) {
-                  return <li key={cell.date} className="aspect-square" />;
-                }
-
-                const level = density(cell.done);
-                const isToday = cell.date === today;
-                const isPicked = cell.date === picked;
-                const day = Number(cell.date.slice(-2));
-
+      {/* 오른쪽 — 잔디를 누르면 그 날의 기록으로, 아니면 이 달의 자질
+          분포로 채운다. 처음 열었을 때도 빈 칸으로 두지 않는다 */}
+      <div className="xl:w-[320px] xl:shrink-0">
+        {picked ? (
+          <Panel title={formatKorean(picked)}>
+            <ul className="flex flex-col gap-2">
+              {pickedQuests.map((quest, i) => {
+                const cat = CATEGORY[quest.category] ?? CATEGORY.STR;
                 return (
-                  <li key={cell.date}>
-                    <button
-                      type="button"
-                      disabled={cell.total === 0}
-                      onClick={() => setPicked(isPicked ? null : cell.date)}
-                      aria-label={`${day}일 ${cell.done}/${cell.total} 완수${
-                        cell.categories.length > 0
-                          ? ` · ${cell.categories.map((c) => CATEGORY[c].name).join(', ')}`
-                          : ''
-                      }`}
-                      className={`press flex aspect-square w-full flex-col justify-between border-2 p-1 text-left font-display text-[10px] ${
-                        isPicked || isToday ? 'border-ink' : 'border-ink-disabled'
-                      } ${
-                        level === 0
-                          ? cell.future
-                            ? 'bg-transparent text-ink-disabled'
-                            : 'bg-sunken text-ink-disabled'
-                          : DENSITY[level]
+                  <li
+                    key={`${quest.title}-${i}`}
+                    className={`border-2 p-2.5 ${
+                      quest.completed
+                        ? 'border-ink bg-surface'
+                        : 'border-ink-disabled bg-sunken'
+                    }`}
+                  >
+                    <p
+                      className={`font-display text-[13px] break-keep ${
+                        quest.completed ? 'text-ink' : 'text-ink-disabled line-through'
                       }`}
                     >
-                      {/* 날짜는 좌상단에 붙여 둔다 — 칸 가운데를 비워야
-                          아래에 '무엇을 했는지'를 적을 자리가 생긴다 */}
-                      <span className="leading-none tabular-nums opacity-70">
-                        {day}
-                      </span>
+                      {quest.title}
+                    </p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                      <Chip
+                        className={
+                          quest.completed
+                            ? 'border-ink bg-sunken text-ink'
+                            : 'border-ink-disabled bg-sunken text-ink-disabled'
+                        }
+                      >
+                        <span aria-hidden>{cat.icon}</span> {cat.name}
+                      </Chip>
+                      {quest.completed && quest.earned && (
+                        <>
+                          <Chip className="border-ink bg-surface text-ink-muted">
+                            +{quest.earned.exp} EXP
+                          </Chip>
+                          <Chip className="border-ink bg-surface text-ink-muted">
+                            +{quest.earned.gold} G
+                          </Chip>
+                        </>
+                      )}
+                      {!quest.completed && (
+                        <Chip className="border-ink-disabled bg-sunken text-ink-disabled">
+                          놓친 의뢰
+                        </Chip>
+                      )}
+                    </div>
 
-                      {/* 아래 줄이 그날의 요약이다. 숫자보다 아이콘이 빨리 읽힌다 */}
-                      <span className="flex flex-wrap items-end gap-0.5 leading-none">
-                        {cell.categories.map((c) => (
-                          <span
-                            key={c}
-                            aria-hidden
-                            className={`text-[11px] leading-none ${
-                              level >= 2 ? 'text-white' : 'text-ink'
-                            }`}
-                            title={CATEGORY[c].name}
-                          >
-                            {CATEGORY[c].icon}
-                          </span>
-                        ))}
-                      </span>
-                    </button>
+                    {/* 그날 남긴 한 줄. 숫자보다 이쪽이 훨씬 오래 남는다 */}
+                    {quest.note && (
+                      <p className="mt-2 border-l-[3px] border-ink pl-2.5 text-[12px] leading-relaxed break-keep text-ink-muted">
+                        “{quest.note}”
+                      </p>
+                    )}
                   </li>
                 );
               })}
             </ul>
-          </div>
-
-          {/* 이달의 요약 */}
-          {hasRecord ? (
-            <div className="border-2 border-ink bg-sunken px-3 py-2.5">
-              <p className="mb-2 font-display text-[11px] text-ink-muted">
-                {viewedSlot?.status === 'bound'
-                  ? `제${viewedSlot.volume}권 「${viewedSlot.title}」`
-                  : '이 장의 기록'}
-              </p>
-              <div className="flex flex-wrap gap-2 font-display text-[12px]">
-                <span className="text-ink tabular-nums">
-                  {view.activeDays}일 걸음
-                </span>
-                <span className="text-ink tabular-nums">
-                  의뢰 {view.totalDone}건
-                </span>
-                <span className="text-ink tabular-nums">
-                  +{view.totalExp.toLocaleString()} EXP
-                </span>
-                <span className="text-ink tabular-nums">
-                  +{view.totalGold.toLocaleString()} G
-                </span>
-              </div>
-              <p className="mt-2 text-xs leading-relaxed break-keep text-ink-muted">
-                이 달의 발길은{' '}
-                <span className="text-ink">「{CATEGORY[topStat].name}」</span>
-                에 가장 오래 머물렀습니다.
-              </p>
-            </div>
-          ) : (
-            <p className="border-2 border-dashed border-ink-disabled px-4 py-8 text-center text-xs break-keep text-ink-muted">
-              이 장에는 아직 아무것도 적히지 않았어요.
+          </Panel>
+        ) : hasRecord ? (
+          <div className="border-[3px] border-ink bg-surface p-4 shadow-pixel sm:p-5">
+            <p className="mb-3 font-display text-[11px] text-ink-muted sm:text-xs">
+              이 달의 자질별 분포
             </p>
-          )}
-
-          {/* 자질별 분포 */}
-          {hasRecord && (
             <ul className="flex flex-col gap-1.5">
               {CATEGORY_ORDER.map((key) => {
                 const cat = CATEGORY[key];
                 const value = view.stats[key];
-                const max = Math.max(1, ...CATEGORY_ORDER.map((c) => view.stats[c]));
                 return (
                   <li key={key} className="flex items-center gap-2.5">
                     <span
@@ -280,7 +352,7 @@ export function Chronicle({
                     <div className="flex h-3 flex-1 border-2 border-ink bg-sunken p-[2px]">
                       <div
                         className="h-full bg-ink"
-                        style={{ width: `${Math.round((value / max) * 100)}%` }}
+                        style={{ width: `${Math.round((value / statMax) * 100)}%` }}
                       />
                     </div>
                     <span className="w-12 shrink-0 text-right font-display text-[11px] tabular-nums text-ink-muted">
@@ -290,71 +362,20 @@ export function Chronicle({
                 );
               })}
             </ul>
-          )}
-        </div>
-      </Panel>
-
-      {/* 하루 펼쳐보기 */}
-      {picked && (
-        <Panel title={formatKorean(picked)}>
-          <ul className="flex flex-col gap-2">
-            {pickedQuests.map((quest, i) => {
-              const cat = CATEGORY[quest.category] ?? CATEGORY.STR;
-              return (
-                <li
-                  key={`${quest.title}-${i}`}
-                  className={`border-2 p-2.5 ${
-                    quest.completed
-                      ? 'border-ink bg-surface'
-                      : 'border-ink-disabled bg-sunken'
-                  }`}
-                >
-                  <p
-                    className={`font-display text-[13px] break-keep ${
-                      quest.completed ? 'text-ink' : 'text-ink-disabled line-through'
-                    }`}
-                  >
-                    {quest.title}
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                    <Chip
-                      className={
-                        quest.completed
-                          ? 'border-ink bg-sunken text-ink'
-                          : 'border-ink-disabled bg-sunken text-ink-disabled'
-                      }
-                    >
-                      <span aria-hidden>{cat.icon}</span> {cat.name}
-                    </Chip>
-                    {quest.completed && quest.earned && (
-                      <>
-                        <Chip className="border-ink bg-surface text-ink-muted">
-                          +{quest.earned.exp} EXP
-                        </Chip>
-                        <Chip className="border-ink bg-surface text-ink-muted">
-                          +{quest.earned.gold} G
-                        </Chip>
-                      </>
-                    )}
-                    {!quest.completed && (
-                      <Chip className="border-ink-disabled bg-sunken text-ink-disabled">
-                        놓친 의뢰
-                      </Chip>
-                    )}
-                  </div>
-
-                  {/* 그날 남긴 한 줄. 숫자보다 이쪽이 훨씬 오래 남는다 */}
-                  {quest.note && (
-                    <p className="mt-2 border-l-[3px] border-ink pl-2.5 text-[12px] leading-relaxed break-keep text-ink-muted">
-                      “{quest.note}”
-                    </p>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </Panel>
-      )}
+            <p className="mt-3 border-t-2 border-dashed border-ink-disabled pt-3 text-xs leading-relaxed break-keep text-ink-muted">
+              잔디를 누르면 그날의 기록이 여기 펼쳐집니다.
+            </p>
+          </div>
+        ) : (
+          <div className="border-[3px] border-dashed border-ink-disabled bg-surface/60 px-4 py-8 text-center sm:py-10">
+            <p className="text-xs leading-relaxed break-keep text-ink-muted">
+              이 장에는 아직 아무것도 적히지 않았어요.
+              <br />
+              잔디를 누르면 그날의 기록이 여기 펼쳐집니다.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
