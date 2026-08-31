@@ -43,45 +43,52 @@ export default function CharacterPage() {
     <>
       <h1 className="font-display text-lg text-ink sm:text-xl">▸ 캐릭터</h1>
 
-      <Character
-        stats={stats}
-        level={levelFromExp(exp)}
-        gold={gold}
-        charClass={charClass}
-        classChanges={classChanges}
-        cosmetics={equippedCosmetics(inventory, equipped)}
-        onChangeClass={changeClass}
-        ashLevel={ashLevel}
-      />
+      {/* xl 미만은 그대로 한 줄로 쌓인다. xl 이상만 오른쪽 레일로 갈라진다 */}
+      <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
+        <div className="flex min-w-0 flex-1 flex-col gap-6">
+          <Character
+            stats={stats}
+            level={levelFromExp(exp)}
+            gold={gold}
+            charClass={charClass}
+            classChanges={classChanges}
+            cosmetics={equippedCosmetics(inventory, equipped)}
+            onChangeClass={changeClass}
+            ashLevel={ashLevel}
+          />
 
-      <StreakStrip
-        streak={activeStreak(streak, lastClearedDate)}
-        bestStreak={bestStreak}
-        days={days}
-        claimed={claimedStreaks}
-        onClaim={(d) => {
-          const label = claimStreak(d);
-          if (label) showToast(`${d}일 보상 — ${label}`);
-        }}
-      />
+          <StreakStrip
+            streak={activeStreak(streak, lastClearedDate)}
+            bestStreak={bestStreak}
+            days={days}
+            claimed={claimedStreaks}
+            onClaim={(d) => {
+              const label = claimStreak(d);
+              if (label) showToast(`${d}일 보상 — ${label}`);
+            }}
+          />
+        </div>
 
-      <NabiPanel
-        affection={affection}
-        claimed={claimedAffection}
-        petsToday={petLog.date === today ? petLog.count : 0}
-        inventory={inventory}
-        furId={nabiFur}
-        accessoryId={nabiAccessory}
-        onClaim={(at) => {
-          const name = claimAffection(at);
-          if (name) showToast(`나비와 ${name} 사이가 되었습니다`);
-        }}
-        onDress={dressNabi}
-        onPet={() => petNabi(today)}
-        shadowLevel={shadowLevel}
-      />
+        <div className="flex flex-col gap-6 xl:w-[320px] xl:shrink-0">
+          <NabiPanel
+            affection={affection}
+            claimed={claimedAffection}
+            petsToday={petLog.date === today ? petLog.count : 0}
+            inventory={inventory}
+            furId={nabiFur}
+            accessoryId={nabiAccessory}
+            onClaim={(at) => {
+              const name = claimAffection(at);
+              if (name) showToast(`나비와 ${name} 사이가 되었습니다`);
+            }}
+            onDress={dressNabi}
+            onPet={() => petNabi(today)}
+            shadowLevel={shadowLevel}
+          />
 
-      <StatPanel stats={stats} />
+          <StatPanel stats={stats} />
+        </div>
+      </div>
     </>
   );
 }

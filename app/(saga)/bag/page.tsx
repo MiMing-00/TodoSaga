@@ -29,50 +29,59 @@ export default function BagPage() {
     <>
       <h1 className="font-display text-lg text-ink sm:text-xl">▸ 소지품</h1>
 
-      <Vault gold={gold} loot={collectLoot(days)} />
+      {/* xl 미만은 그대로 한 줄로 쌓인다(소지금이 위, 가방이 아래).
+          xl 이상만 소지금이 오른쪽 레일로 넘어간다 —
+          row-reverse라 DOM 순서(Vault 먼저)는 그대로 두고 자리만 바꾼다 */}
+      <div className="flex flex-col gap-6 xl:flex-row-reverse xl:items-start xl:gap-8">
+        <div className="xl:w-[320px] xl:shrink-0">
+          <Vault gold={gold} loot={collectLoot(days)} />
+        </div>
 
-      <Inventory
-        inventory={inventory}
-        equipped={equipped}
-        ctx={{
-          charClass,
-          level: levelFromExp(exp),
-          stats,
-          streak: activeStreak(streak, lastClearedDate),
-        }}
-        onEquip={equipAction}
-        onUnequip={unequipAction}
-        onSell={(uid) => {
-          const result = sellItem(uid);
-          if ('error' in result) return result.error;
-          showToast(`팔았습니다 — ${result.gold.toLocaleString()} G`);
-          return null;
-        }}
-      />
+        <div className="flex min-w-0 flex-1 flex-col gap-6">
+          <Inventory
+            inventory={inventory}
+            equipped={equipped}
+            ctx={{
+              charClass,
+              level: levelFromExp(exp),
+              stats,
+              streak: activeStreak(streak, lastClearedDate),
+            }}
+            onEquip={equipAction}
+            onUnequip={unequipAction}
+            onSell={(uid) => {
+              const result = sellItem(uid);
+              if ('error' in result) return result.error;
+              showToast(`팔았습니다 — ${result.gold.toLocaleString()} G`);
+              return null;
+            }}
+          />
 
-      {/* 만드는 일은 아래 화면으로 내렸다. 입구는 하나만 둔다 */}
-      <Link
-        href="/bag/forge"
-        className="press flex items-center gap-3 border-[3px] border-ink bg-surface px-4 py-3.5 shadow-pixel transition-[transform,box-shadow] duration-100 hover:-translate-y-px"
-      >
-        <span aria-hidden className="text-xl leading-none">
-          ⚒
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-display text-[13px] text-ink">
-            벼리는 곳
-          </span>
-          <span className="mt-1 block text-[11px] break-keep text-ink-muted">
-            재료로 물건을 만들고, 장비를 두드려 더 좋게 만듭니다
-            {held > 0 && (
-              <span className="text-ink"> · 재료 {held}개 보유</span>
-            )}
-          </span>
-        </span>
-        <span aria-hidden className="font-display text-sm text-ink-muted">
-          ▸
-        </span>
-      </Link>
+          {/* 만드는 일은 아래 화면으로 내렸다. 입구는 하나만 둔다 */}
+          <Link
+            href="/bag/forge"
+            className="press flex items-center gap-3 border-[3px] border-ink bg-surface px-4 py-3.5 shadow-pixel transition-[transform,box-shadow] duration-100 hover:-translate-y-px"
+          >
+            <span aria-hidden className="text-xl leading-none">
+              ⚒
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-display text-[13px] text-ink">
+                벼리는 곳
+              </span>
+              <span className="mt-1 block text-[11px] break-keep text-ink-muted">
+                재료로 물건을 만들고, 장비를 두드려 더 좋게 만듭니다
+                {held > 0 && (
+                  <span className="text-ink"> · 재료 {held}개 보유</span>
+                )}
+              </span>
+            </span>
+            <span aria-hidden className="font-display text-sm text-ink-muted">
+              ▸
+            </span>
+          </Link>
+        </div>
+      </div>
     </>
   );
 }

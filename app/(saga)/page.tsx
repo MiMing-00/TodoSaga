@@ -1,22 +1,22 @@
 'use client';
 
 import { generateQuests, rerollQuest } from '@/app/actions/quest';
-import { Panel, PixelButton, SegmentGauge } from '@/app/components/Pixel';
+import { Chip, Panel, PixelButton, SegmentGauge } from '@/app/components/Pixel';
 import { QuestCard } from '@/app/components/QuestCard';
 import { QuestScrollOverlay, type ScrollPhase } from '@/app/components/QuestScrollOverlay';
 import { LoreTip } from '@/app/components/LoreTip';
 import { Routines } from '@/app/components/Routines';
 import { activeDebuffPercent } from '@/lib/daily';
-import { formatKorean, todayKey } from '@/lib/date';
+import { formatKorean, shiftDay, todayKey } from '@/lib/date';
 import { computeBonus, withDebuff } from '@/lib/inventory';
 import { getItem } from '@/lib/items';
-import { levelFromExp } from '@/lib/quest';
+import { CATEGORY, levelFromExp } from '@/lib/quest';
 import { PixelSprite } from '@/app/components/PixelSprite';
 import { Wordmark } from '@/app/components/Wordmark';
 import { isRegistered } from '@/lib/routine';
 import { REROLL_COST } from '@/lib/shop';
 import { NABI, NABI_PALETTE, CLASSES, UNLOCK_STAT } from '@/lib/sprite';
-import { useSagaStore } from '@/lib/store';
+import { activeStreak, useSagaStore } from '@/lib/store';
 import { useState } from 'react';
 
 export default function QuestPage() {
@@ -27,6 +27,8 @@ export default function QuestPage() {
   const inventory = useSagaStore((s) => s.inventory);
   const equipped = useSagaStore((s) => s.equipped);
   const debuff = useSagaStore((s) => s.debuff);
+  const streak = useSagaStore((s) => s.streak);
+  const lastClearedDate = useSagaStore((s) => s.lastClearedDate);
   const setJob = useSagaStore((s) => s.setJob);
   const addQuests = useSagaStore((s) => s.addQuests);
   const completeQuest = useSagaStore((s) => s.completeQuest);
@@ -55,6 +57,11 @@ export default function QuestPage() {
 
   const doneCount = quests.filter((q) => q.completed).length;
   const allDone = quests.length > 0 && doneCount === quests.length;
+
+  // 오늘 의뢰가 비어 있는 순간이 실은 가장 자주 보는 화면이다.
+  // 빈 칸을 채우려고 지어내지 않고, 어제 남긴 기록과 이어온 불씨로 채운다
+  const yesterdayQuests = days[shiftDay(today, -1)] ?? [];
+  const liveStreak = activeStreak(streak, lastClearedDate);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -171,6 +178,24 @@ export default function QuestPage() {
             </span>
           )}
         </p>
+
+        {/* 오늘의 여정 게이지 — 따로 창을 하나 더 열 만큼 무겁지 않다.
+            날짜 밑에 바로 붙여서 훑을 때 한 덩어리로 읽히게 한다 */}
+        {quests.length > 0 && (
+          <div className="mt-3">
+            <SegmentGauge
+              value={doneCount}
+              max={quests.length}
+              segments={Math.min(quests.length, 12)}
+              fill="bg-primary"
+            />
+            <p className="mt-2 text-[11px] text-ink-muted sm:text-xs">
+              {allDone
+                ? '오늘 몫의 의뢰를 모두 완수했습니다. 나비가 흐뭇해하네요.'
+                : `아직 ${quests.length - doneCount}건이 남았어요. 한 걸음씩이면 됩니다.`}
+            </p>
+          </div>
+        )}
       </div>
 
       {debuffPercent > 0 && (
@@ -187,29 +212,6 @@ export default function QuestPage() {
         </p>
       )}
 
-      {quests.length > 0 && (
-        <Panel
-          title="오늘의 여정"
-          right={
-            <span className="font-display text-[10px] tabular-nums text-canvas/70">
-              {doneCount} / {quests.length}
-            </span>
-          }
-        >
-          <SegmentGauge
-            value={doneCount}
-            max={quests.length}
-            segments={Math.min(quests.length, 12)}
-            fill="bg-primary"
-          />
-          <p className="mt-2.5 text-xs text-ink-muted">
-            {allDone
-              ? '오늘 몫의 의뢰를 모두 완수했습니다. 나비가 흐뭇해하네요.'
-              : `아직 ${quests.length - doneCount}건이 남았어요. 한 걸음씩이면 됩니다.`}
-          </p>
-        </Panel>
-      )}
-
       <Routines
         routines={routines}
         today={today}
@@ -222,100 +224,166 @@ export default function QuestPage() {
         onRemove={removeRoutine}
       />
 
-      <Panel title="나비에게 의뢰하기">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {/* 생업은 한 번 적으면 바뀌지 않는다. 매일 보는 폼에 둘 값이 아니다.
-              비어 있을 때만 여기서 채우게 하고, 그 뒤로는 설정에서 고친다 */}
-          {!job.trim() && (
-            <Field label="현실의 생업" hint="한 번만 적으면 됩니다. 나중에 설정에서 고칠 수 있어요">
-              <input
-                type="text"
-                value={job}
-                onChange={(e) => setJob(e.target.value)}
-                placeholder="개발자, 학생, 디자이너..."
-                className={inputStyle}
-                required
-                disabled={loading}
-              />
-            </Field>
-          )}
-
-          <Field label="오늘 해야 할 일">
-            <textarea
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              placeholder="회의 준비하고, 운동하고, 블로그 글 하나 쓸 거야"
-              className={`${inputStyle} resize-none`}
-              rows={4}
-              required
-              disabled={loading}
-            />
-          </Field>
-
-          {error && (
-            <p className="border-2 border-danger bg-surface px-3 py-2 font-display text-[11px] text-danger">
-              ! {error}
-            </p>
-          )}
-
-          <PixelButton type="submit" disabled={loading} className="w-full py-3 text-sm">
-            {loading ? (
-              <span className="animate-blink">나비가 받아적는 중...</span>
-            ) : (
-              '의뢰서 받기'
-            )}
-          </PixelButton>
-        </form>
-      </Panel>
-
-      <Panel
-        title="오늘의 의뢰"
-        right={
-          <span className="font-display text-[10px] tabular-nums text-canvas/70">
-            {quests.length}건
-          </span>
-        }
-      >
-        <div className="flex flex-col gap-4">
-        {quests.length === 0 ? (
-          <div className="border-[3px] border-dashed border-ink-disabled bg-surface/60 px-6 py-14 text-center">
-            <div className="animate-float mb-4 flex justify-center">
-              <PixelSprite
-                layers={[NABI]}
-                palette={NABI_PALETTE}
-                size={56}
-              />
-            </div>
-            <p className="font-display text-xs leading-relaxed text-ink-muted sm:text-sm">
-              나비가 앞발을 모으고 기다리고 있어요.
-              <br />
-              오늘 해야 할 일을 들려주세요.
-            </p>
-          </div>
-        ) : (
-          quests.map((quest, index) => (
-            <QuestCard
-              key={`${quest.title}-${index}`}
-              quest={quest}
-              bonus={withDebuff(
-                computeBonus(inventory, equipped, quest.category),
-                debuffPercent,
+      {/* 폼과 목록은 무게가 다르다 — 폼은 채우고 나면 끝이고, 목록이 오늘의 진짜 콘텐츠다.
+          xl 미만은 지금처럼 위아래로 쌓이고, xl 이상만 좁은 폼 · 넓은 목록으로 갈라진다 */}
+      <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
+        <div className="xl:w-[360px] xl:shrink-0">
+          <Panel title="나비에게 의뢰하기">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              {/* 생업은 한 번 적으면 바뀌지 않는다. 매일 보는 폼에 둘 값이 아니다.
+                  비어 있을 때만 여기서 채우게 하고, 그 뒤로는 설정에서 고친다 */}
+              {!job.trim() && (
+                <Field label="현실의 생업" hint="한 번만 적으면 됩니다. 나중에 설정에서 고칠 수 있어요">
+                  <input
+                    type="text"
+                    value={job}
+                    onChange={(e) => setJob(e.target.value)}
+                    placeholder="개발자, 학생, 디자이너..."
+                    className={inputStyle}
+                    required
+                    disabled={loading}
+                  />
+                </Field>
               )}
-              rerollCost={REROLL_COST}
-              rerolling={rerollingIndex === index}
-              registered={isRegistered(routines, quest)}
-              onComplete={(note) => handleComplete(index, note)}
-              onRemove={() => removeQuest(today, index)}
-              onReroll={() => handleReroll(index)}
-              onRegister={() => {
-                addRoutine(quest);
-                showToast(`상시 의뢰로 걸었습니다 — ${quest.title}`);
-              }}
-            />
-          ))
-        )}
+
+              <Field label="오늘 해야 할 일">
+                <textarea
+                  value={userInput}
+                  onChange={(e) => setUserInput(e.target.value)}
+                  placeholder="회의 준비하고, 운동하고, 블로그 글 하나 쓸 거야"
+                  className={`${inputStyle} resize-none`}
+                  rows={4}
+                  required
+                  disabled={loading}
+                />
+              </Field>
+
+              {error && (
+                <p className="border-2 border-danger bg-surface px-3 py-2 font-display text-[11px] text-danger">
+                  ! {error}
+                </p>
+              )}
+
+              <PixelButton type="submit" disabled={loading} className="w-full py-3 text-sm">
+                {loading ? (
+                  <span className="animate-blink">나비가 받아적는 중...</span>
+                ) : (
+                  '의뢰서 받기'
+                )}
+              </PixelButton>
+            </form>
+          </Panel>
         </div>
-      </Panel>
+
+        <div className="min-w-0 flex-1">
+          <Panel
+            title="오늘의 의뢰"
+            right={
+              <span className="font-display text-[10px] tabular-nums text-canvas/70">
+                {quests.length}건
+              </span>
+            }
+          >
+            <div className="flex flex-col gap-4">
+            {/* 의뢰가 없는 날은 이 자리가 페이지의 전부다.
+                짧은 채로 두면 밑에 빈 화면만 남으니, 하루가 시작되길
+                기다리는 자리답게 넉넉히 차지하게 한다 */}
+            {quests.length === 0 ? (
+              <div className="flex min-h-[320px] flex-col items-center justify-center gap-6 border-[3px] border-dashed border-ink-disabled bg-surface/60 px-6 py-8 text-center sm:min-h-[400px] xl:min-h-[480px]">
+                <div>
+                  <div className="animate-float mb-4 flex justify-center">
+                    <PixelSprite
+                      layers={[NABI]}
+                      palette={NABI_PALETTE}
+                      size={56}
+                    />
+                  </div>
+                  {/* 불씨가 이어지고 있으면 그 얘기부터 — 매일 같은 대사보다
+                      "지금 이 용사"에 대한 말이 나비다워진다 */}
+                  <p className="font-display text-xs leading-relaxed text-ink-muted sm:text-sm">
+                    {liveStreak > 0 ? (
+                      <>
+                        <span className="text-ink">{liveStreak}일째</span> 불씨를
+                        이어가고 있어요.
+                        <br />
+                        오늘 몫도 나비에게 들려주세요.
+                      </>
+                    ) : (
+                      <>
+                        나비가 앞발을 모으고 기다리고 있어요.
+                        <br />
+                        오늘 해야 할 일을 들려주세요.
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                {/* 어제 기록이 있으면 살짝 곁들인다 — 빈 화면이 아니라
+                    "이어지는 하루" 사이의 쉼표로 읽히게 */}
+                {yesterdayQuests.length > 0 && (
+                  <div className="w-full max-w-xs border-t-2 border-dashed border-ink-disabled pt-4">
+                    <p className="mb-2 font-display text-[10px] text-ink-disabled">
+                      어제 남긴 기록
+                    </p>
+                    <ul className="flex flex-col gap-1.5 text-left">
+                      {yesterdayQuests.slice(0, 3).map((quest, i) => {
+                        const cat = CATEGORY[quest.category] ?? CATEGORY.STR;
+                        return (
+                          <li
+                            key={`${quest.title}-${i}`}
+                            className="flex items-center gap-1.5"
+                          >
+                            <Chip
+                              className={
+                                quest.completed
+                                  ? 'border-ink bg-sunken text-ink-muted'
+                                  : 'border-ink-disabled bg-sunken text-ink-disabled'
+                              }
+                            >
+                              <span aria-hidden>{cat.icon}</span>
+                            </Chip>
+                            <span
+                              className={`truncate text-[11px] ${
+                                quest.completed
+                                  ? 'text-ink-muted'
+                                  : 'text-ink-disabled line-through'
+                              }`}
+                            >
+                              {quest.title}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : (
+              quests.map((quest, index) => (
+                <QuestCard
+                  key={`${quest.title}-${index}`}
+                  quest={quest}
+                  bonus={withDebuff(
+                    computeBonus(inventory, equipped, quest.category),
+                    debuffPercent,
+                  )}
+                  rerollCost={REROLL_COST}
+                  rerolling={rerollingIndex === index}
+                  registered={isRegistered(routines, quest)}
+                  onComplete={(note) => handleComplete(index, note)}
+                  onRemove={() => removeQuest(today, index)}
+                  onReroll={() => handleReroll(index)}
+                  onRegister={() => {
+                    addRoutine(quest);
+                    showToast(`상시 의뢰로 걸었습니다 — ${quest.title}`);
+                  }}
+                />
+              ))
+            )}
+            </div>
+          </Panel>
+        </div>
+      </div>
     </>
   );
 }

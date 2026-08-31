@@ -18,7 +18,14 @@ import {
 import { todayKey } from '@/lib/date';
 import { EXP_PER_LEVEL, expInLevel, levelFromExp } from '@/lib/quest';
 import { NABI, NABI_PALETTE } from '@/lib/sprite';
+import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
+
+/**
+ * 좌우로 갈라 쓰는(레일 · 비대칭 분할) 페이지는 컨테이너를 더 넓게 연다.
+ * 설정만 예외로 좁게 둔다 — 짧은 폼 하나뿐이라 넓힐 이유가 없다.
+ */
+const SPLIT_ROUTES = ['/', '/character', '/bag', '/shop'];
 
 /**
  * 사가 화면 공통 껍데기.
@@ -50,6 +57,9 @@ export default function SagaLayout({
   const closeDay = useSagaStore((s) => s.closeDay);
   const toast = useSagaStore((s) => s.toast);
   const dismissToast = useSagaStore((s) => s.dismissToast);
+
+  const pathname = usePathname();
+  const isSplit = SPLIT_ROUTES.includes(pathname);
 
   // 저장된 상태는 마운트 후에 복원한다.
   // 렌더 중에 localStorage를 읽으면 서버 HTML과 값이 달라져 하이드레이션이 깨진다.
@@ -127,7 +137,11 @@ export default function SagaLayout({
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <main className="flex-1 overflow-y-auto overscroll-contain">
           {/* z-30. 나비(z-20)가 이 뒤로 지나가고, 가려진 동안엔 눌리지 않는다 */}
-          <div className="relative z-30 mx-auto flex max-w-3xl flex-col gap-6 px-4 pt-7 pb-10 sm:gap-7 sm:px-8 sm:pt-9">
+          <div
+            className={`relative z-30 mx-auto flex flex-col gap-6 px-4 pt-7 pb-10 sm:gap-7 sm:px-8 sm:pt-9 ${
+              isSplit ? 'max-w-3xl xl:max-w-6xl' : 'max-w-3xl xl:max-w-4xl'
+            }`}
+          >
             {children}
           </div>
         </main>
